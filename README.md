@@ -221,7 +221,7 @@ python manage.py runserver
 If Django is “not found” after activating the venv (common in some IDE terminals), run:
 
 ```bash
-.venv/bin/python manage.py runserver
+.venv\Scripts\python.exe manage.py runserver
 ```
 
 ### 2. Follow the learning order (do not skip)
