@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "corsheaders",
+    "drf_yasg",
     # Local apps
     "accounts",
     "knowledge",
@@ -153,3 +154,31 @@ EMBEDDING_MODEL_NAME = os.getenv(
     "EMBEDDING_MODEL_NAME",
     "sentence-transformers/all-MiniLM-L6-v2",
 )
+
+# ---------------------------------------------------------------------------
+# Swagger / drf-yasg — JWT Bearer Authorization button
+# ---------------------------------------------------------------------------
+# Enables the 🔒 Authorize button in Swagger UI (/api/docs/).
+# How to use:
+#   1. POST /api/accounts/login/  → copy tokens.access
+#   2. Click Authorize → enter:  Bearer <access_token>
+#   3. All protected endpoints now work in Swagger.
+SWAGGER_SETTINGS = {
+    "SECURITY_DEFINITIONS": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": (
+                "JWT Authorization header.\n\n"
+                "Format: **Bearer &lt;access_token&gt;**\n\n"
+                "Get a token from POST /api/accounts/login/"
+            ),
+        }
+    },
+    "USE_SESSION_AUTH": False,       # disable DRF session login in Swagger
+    "JSON_EDITOR": True,             # prettier request body editor
+    "SUPPORTED_SUBMIT_METHODS": [    # allow all HTTP methods in Try-it-out
+        "get", "post", "put", "patch", "delete",
+    ],
+}
