@@ -25,6 +25,28 @@ urlpatterns = [
 
     # 💬 Chat
     path("api/chat/", include("chat.urls")),
+
+    # ---------------------------------------------------------------------------
+    # API documentation
+    # Swagger UI  : /api/docs/
+    # ReDoc        : /api/redoc/
+    # OpenAPI JSON : /api/swagger.json
+    # ---------------------------------------------------------------------------
+    path(
+        "api/docs/",
+        schema_view.with_ui("swagger", cache_timeout=0),
+        name="schema-swagger-ui",
+    ),
+    path(
+        "api/redoc/",
+        schema_view.with_ui("redoc", cache_timeout=0),
+        name="schema-redoc",
+    ),
+    path(
+        "api/swagger.json",
+        schema_view.without_ui(cache_timeout=0),
+        name="schema-json",
+    ),
 ]
 
 # 📁 Serve uploaded files in development

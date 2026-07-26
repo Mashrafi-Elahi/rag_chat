@@ -1,0 +1,672 @@
+{
+  "info": {
+    "name": "KnowledgeNest Accounts API",
+    "_postman_id": "knowledgenest-accounts-v1",
+    "description": "Complete Postman collection for KnowledgeNest authentication and user profile APIs.\n\n## Setup\n1. Import this file into Postman.\n2. Create an environment named **KnowledgeNest Local** with variable `baseUrl = http://127.0.0.1:8000`.\n3. Run **Register** or **Login** — the Tests script auto-saves tokens to environment variables.\n4. All protected requests use `{{accessToken}}` automatically.\n\n## Flow\nRegister → Login → (access token saved) → Use protected endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "description": "Base URL of the local development server"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "description": "JWT access token — auto-filled by Login / Register Tests script"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "description": "JWT refresh token — auto-filled by Login / Register Tests script"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Authentication",
+      "description": "Public endpoints: register, login, forgot-password. Protected: change-password, logout.",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@gmail.com\",\n  \"password\": \"Password123!\",\n  \"full_name\": \"Test User\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/register/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "register", ""]
+            },
+            "description": "Create a new user account.\n\n**Expected response:** 201 Created\n```json\n{\n  \"message\": \"Account created successfully.\",\n  \"user\": { \"id\": 1, \"email\": \"...\", \"full_name\": \"...\", \"date_joined\": \"...\" },\n  \"tokens\": { \"access\": \"...\", \"refresh\": \"...\" }\n}\n```"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has tokens', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('tokens');",
+                  "    pm.expect(json.tokens).to.have.property('access');",
+                  "    pm.expect(json.tokens).to.have.property('refresh');",
+                  "});",
+                  "",
+                  "// Auto-save tokens to environment",
+                  "if (pm.response.code === 201) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', json.tokens.access);",
+                  "    pm.collectionVariables.set('refreshToken', json.tokens.refresh);",
+                  "    console.log('Tokens saved to collection variables.');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@gmail.com\",\n  \"password\": \"Password123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/login/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "login", ""]
+            },
+            "description": "Authenticate with email and password.\n\n**Expected response:** 200 OK\n```json\n{\n  \"message\": \"Login successful.\",\n  \"user\": { \"id\": 1, \"email\": \"...\", \"full_name\": \"...\", \"date_joined\": \"...\" },\n  \"tokens\": { \"access\": \"...\", \"refresh\": \"...\" }\n}\n```\n\nThe Tests script auto-saves `access` and `refresh` tokens."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has tokens', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.tokens).to.have.property('access');",
+                  "    pm.expect(json.tokens).to.have.property('refresh');",
+                  "});",
+                  "",
+                  "// Auto-save tokens to collection variables",
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', json.tokens.access);",
+                  "    pm.collectionVariables.set('refreshToken', json.tokens.refresh);",
+                  "    console.log('Tokens saved. Access:', json.tokens.access.substring(0, 20) + '...');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@gmail.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/forgot-password/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "forgot-password", ""]
+            },
+            "description": "Request a password-reset email.\n\nAlways returns a generic 200 response to prevent account enumeration.\n\n**Expected response:** 200 OK\n```json\n{ \"message\": \"Password reset email sent\" }\n```"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Generic message returned', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('message');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"Password123!\",\n  \"new_password\": \"NewPassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/change-password/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "change-password", ""]
+            },
+            "description": "Change the authenticated user's password.\n\n**Requires:** `Authorization: Bearer {{accessToken}}`\n\n**Expected response:** 200 OK\n```json\n{ \"message\": \"Password changed successfully\" }\n```"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Password changed message returned', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.include('changed');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/logout/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "logout", ""]
+            },
+            "description": "Logout the current user by validating the refresh token.\n\n**Requires:** `Authorization: Bearer {{accessToken}}`\n\nAfter a successful response, delete both tokens from the client.\n\n**Expected response:** 200 OK\n```json\n{ \"message\": \"Logout successful\" }\n```"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Clear tokens after successful logout",
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('accessToken', '');",
+                  "    pm.collectionVariables.set('refreshToken', '');",
+                  "    console.log('Tokens cleared after logout.');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 User Profile",
+      "description": "Protected profile endpoints. Requires a valid access token (run Login first).",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/profile/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "profile", ""]
+            },
+            "description": "Retrieve the authenticated user's profile.\n\n**Requires:** `Authorization: Bearer {{accessToken}}`\n\n**Expected response:** 200 OK\n```json\n{\n  \"id\": 1,\n  \"email\": \"user@gmail.com\",\n  \"full_name\": \"Test User\",\n  \"date_joined\": \"2026-07-26T07:36:06Z\"\n}\n```"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Profile has required fields', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('id');",
+                  "    pm.expect(json).to.have.property('email');",
+                  "    pm.expect(json).to.have.property('full_name');",
+                  "    pm.expect(json).to.have.property('date_joined');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Updated Name\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/profile/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "profile", ""]
+            },
+            "description": "Update the authenticated user's profile. Currently only `full_name` can be changed.\n\n**Requires:** `Authorization: Bearer {{accessToken}}`\n\n**Expected response:** 200 OK\n```json\n{\n  \"id\": 1,\n  \"email\": \"user@gmail.com\",\n  \"full_name\": \"Updated Name\",\n  \"date_joined\": \"2026-07-26T07:36:06Z\"\n}\n```"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('full_name updated', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.full_name).to.eql('Updated Name');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/profile/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "profile", ""]
+            },
+            "description": "Permanently delete the authenticated user's account.\n\n⚠️ **This action is irreversible.**\n\n**Requires:** `Authorization: Bearer {{accessToken}}`\n\n**Expected response:** 200 OK\n```json\n{ \"message\": \"Account deleted successfully\" }\n```"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Deletion message returned', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.message).to.include('deleted');",
+                  "});",
+                  "",
+                  "// Clear tokens after account deletion",
+                  "if (pm.response.code === 200) {",
+                  "    pm.collectionVariables.set('accessToken', '');",
+                  "    pm.collectionVariables.set('refreshToken', '');",
+                  "    console.log('Account deleted. Tokens cleared.');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Token Refresh",
+      "description": "Refresh an expired access token using the refresh token.",
+      "item": [
+        {
+          "name": "Refresh Access Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/token/refresh/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "token", "refresh", ""]
+            },
+            "description": "Get a new access token using the refresh token.\n\nUse this when the access token expires (after 60 minutes by default).\n\n**Expected response:** 200 OK\n```json\n{ \"access\": \"new_jwt_access_token\" }\n```"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Auto-update access token",
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', json.access);",
+                  "    console.log('Access token refreshed.');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 Smoke Tests — Happy Path",
+      "description": "Run these requests in order to verify the full flow works end-to-end.",
+      "item": [
+        {
+          "name": "STEP 1 — Register",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"smoke@example.com\",\n  \"password\": \"SmokeTest123!\",\n  \"full_name\": \"Smoke User\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/register/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "register", ""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    var d = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', d.tokens.access);",
+                  "    pm.collectionVariables.set('refreshToken', d.tokens.refresh);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "STEP 2 — Login",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"smoke@example.com\",\n  \"password\": \"SmokeTest123!\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/login/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "login", ""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    var d = pm.response.json();",
+                  "    pm.collectionVariables.set('accessToken', d.tokens.access);",
+                  "    pm.collectionVariables.set('refreshToken', d.tokens.refresh);",
+                  "    console.log('Access token saved.');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "STEP 3 — Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/profile/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "profile", ""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Email matches', function () {",
+                  "    pm.expect(pm.response.json().email).to.eql('smoke@example.com');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "STEP 4 — Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Smoke User Updated\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/profile/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "profile", ""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Name updated', () => pm.expect(pm.response.json().full_name).to.eql('Smoke User Updated'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "STEP 5 — Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"SmokeTest123!\",\n  \"new_password\": \"NewSmokeTest456!\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/change-password/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "change-password", ""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "STEP 6 — Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}",
+              "options": {"raw": {"language": "json"}}
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/logout/",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "accounts", "logout", ""]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('accessToken', '');",
+                  "pm.collectionVariables.set('refreshToken', '');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

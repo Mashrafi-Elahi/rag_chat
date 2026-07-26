@@ -5,7 +5,7 @@ django-cors-headers>=4.3
 python-dotenv>=1.0
 
 # API docs (see docs/API_TESTING.md):
-# drf-yasg>=1.21
+drf-yasg>=1.21
 
 # Install later when you build the RAG pipeline (Step 6+ in GUIDE.md):
 # chromadb
