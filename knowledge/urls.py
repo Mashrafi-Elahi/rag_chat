@@ -1,5 +1,16 @@
-from django.urls import path
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from .views import KnowledgeBaseViewSet
+
+router = DefaultRouter()
+
+router.register(
+    r"bases",
+    KnowledgeBaseViewSet,
+    basename="knowledge-base",
+)
 
 urlpatterns = [
-    # Step 3–4 in GUIDE.md — knowledge bases + documents endpoints
+    path("", include(router.urls)),
 ]
