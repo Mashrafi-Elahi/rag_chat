@@ -1,0 +1,63 @@
+%%{init: {"theme": "neutral"}}%%
+%% KnowledgeNest AI — Database schema (metadata only)
+%% Embeddings live in ChromaDB, not in these tables.
+%% Auth: accounts.User (email + password). No Profile table.
+
+erDiagram
+    User ||--o{ KnowledgeBase : owns
+    User ||--o{ ChatSession : starts
+    KnowledgeBase ||--o{ Document : contains
+    KnowledgeBase ||--o{ ChatSession : powers
+    ChatSession ||--o{ ChatMessage : includes
+
+    User {
+        int id PK
+        string email UK
+        string password
+        string full_name
+        bool is_active
+        bool is_staff
+        datetime date_joined
+        datetime last_login
+    }
+
+    KnowledgeBase {
+        uuid id PK
+        int owner_id FK
+        string name
+        text description
+        string chroma_collection_id UK
+        datetime created_at
+        datetime updated_at
+    }
+
+    Document {
+        uuid id PK
+        uuid knowledge_base_id FK
+        string title
+        string source_type
+        string file
+        string source_url
+        string status
+        text error_message
+        int chunk_count
+        datetime created_at
+        datetime updated_at
+    }
+
+    ChatSession {
+        uuid id PK
+        int user_id FK
+        uuid knowledge_base_id FK
+        string title
+        datetime created_at
+        datetime updated_at
+    }
+
+    ChatMessage {
+        uuid id PK
+        uuid session_id FK
+        string role
+        text content
+        datetime created_at
+    }
