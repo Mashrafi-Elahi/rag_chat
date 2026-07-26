@@ -102,3 +102,57 @@ class AuthResponseSerializer(serializers.Serializer):
     user = UserSerializer()
 
     tokens = TokenResponseSerializer()
+    from rest_framework import serializers
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    """
+    Request body:
+
+    {
+        "email": "user@example.com"
+    }
+    """
+
+    email = serializers.EmailField()
+
+
+
+class ChangePasswordSerializer(serializers.Serializer):
+    """
+    Request body:
+
+    {
+        "old_password": "oldpass123",
+        "new_password": "newpass123"
+    }
+    """
+
+    old_password = serializers.CharField(
+        write_only=True
+    )
+
+    new_password = serializers.CharField(
+        write_only=True,
+        min_length=8
+    )
+
+
+
+    def validate(self, attrs):
+
+        user = self.context["request"].user
+
+
+        if not user.check_password(
+            attrs["old_password"]
+        ):
+            raise serializers.ValidationError(
+                {
+                    "old_password":
+                    "Incorrect old password."
+                }
+            )
+
+
+        return attrs
