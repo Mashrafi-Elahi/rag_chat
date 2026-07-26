@@ -44,6 +44,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "id",
             "status",
+            "knowledge_base",
             "error_message",
             "chunk_count",
             "created_at",
