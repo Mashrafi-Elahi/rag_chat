@@ -1,5 +1,15 @@
 from django.urls import path
+from .views import DocumentListCreateAPIView, DocumentDetailAPIView
 
 urlpatterns = [
-    # Step 3–4 in GUIDE.md — knowledge bases + documents endpoints
+    path(
+        "bases/<uuid:kb_id>/documents/",
+        DocumentListCreateAPIView.as_view(),
+        name="document-list-create",
+    ),
+    path(
+        "bases/<uuid:kb_id>/documents/<uuid:doc_id>/",
+        DocumentDetailAPIView.as_view(),
+        name="document-detail",
+    ),
 ]
