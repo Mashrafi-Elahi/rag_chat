@@ -2,7 +2,7 @@
 
 Build a personal AI knowledge base from **PDF**, **DOCX**, **TXT**, or **website URLs**, then chat with that knowledge using **OpenRouter**.
 
-This README is the **developer handbook**: architecture, pipeline, and how you should work day to day.
+This READM is the **developer handbook**: architecture, pipeline, and how you should work day to day.
 
 ---
 
