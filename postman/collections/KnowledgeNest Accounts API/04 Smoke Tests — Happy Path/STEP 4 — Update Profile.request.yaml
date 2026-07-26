@@ -1,0 +1,19 @@
+$kind: http-request
+url: "{{baseUrl}}/api/accounts/profile/"
+method: PATCH
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{accessToken}}
+body:
+  type: json
+  content: |-
+    {
+      "full_name": "Smoke User Updated"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.test('Name updated', () => pm.expect(pm.response.json().full_name).to.eql('Smoke User Updated'));
+    language: text/javascript
+order: 4000

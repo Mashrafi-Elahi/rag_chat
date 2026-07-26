@@ -2,6 +2,10 @@
 workspace:
   id: cac6ff1e-4068-4b89-8cc9-d26eba0b6b9c
 
+cloudResources:
+  collections:
+    ../postman/collections/KnowledgeNest Accounts API: 210bfa15-ebe9-44ae-8b61-1f0081c7a10f
+
 # All resources in the `postman/` folder are automatically registered in Local View.
 # Point to additional files outside the `postman/` folder to register them individually. Example:
 #localResources:

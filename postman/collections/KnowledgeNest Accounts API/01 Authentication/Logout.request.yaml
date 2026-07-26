@@ -1,0 +1,38 @@
+$kind: http-request
+description: |-
+  Logout the current user by validating the refresh token.
+
+  **Requires:** `Authorization: Bearer {{accessToken}}`
+
+  After a successful response, delete both tokens from the client.
+
+  **Expected response:** 200 OK
+  ```json
+  { "message": "Logout successful" }
+  ```
+url: "{{baseUrl}}/api/accounts/logout/"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{accessToken}}
+body:
+  type: json
+  content: |-
+    {
+      "refresh": "{{refreshToken}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200 OK', function () {
+          pm.response.to.have.status(200);
+      });
+
+      // Clear tokens after successful logout
+      if (pm.response.code === 200) {
+          pm.collectionVariables.set('accessToken', '');
+          pm.collectionVariables.set('refreshToken', '');
+          console.log('Tokens cleared after logout.');
+      }
+    language: text/javascript
+order: 5000

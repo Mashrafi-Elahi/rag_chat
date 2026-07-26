@@ -1,0 +1,47 @@
+$kind: http-request
+description: |-
+  Create a new user account.
+
+  **Expected response:** 201 Created
+  ```json
+  {
+    "message": "Account created successfully.",
+    "user": { "id": 1, "email": "...", "full_name": "...", "date_joined": "..." },
+    "tokens": { "access": "...", "refresh": "..." }
+  }
+  ```
+url: "{{baseUrl}}/api/accounts/register/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "user@gmail.com",
+      "password": "Password123!",
+      "full_name": "Test User"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 201 Created', function () {
+          pm.response.to.have.status(201);
+      });
+
+      pm.test('Response has tokens', function () {
+          var json = pm.response.json();
+          pm.expect(json).to.have.property('tokens');
+          pm.expect(json.tokens).to.have.property('access');
+          pm.expect(json.tokens).to.have.property('refresh');
+      });
+
+      // Auto-save tokens to environment
+      if (pm.response.code === 201) {
+          var json = pm.response.json();
+          pm.collectionVariables.set('accessToken', json.tokens.access);
+          pm.collectionVariables.set('refreshToken', json.tokens.refresh);
+          console.log('Tokens saved to collection variables.');
+      }
+    language: text/javascript
+order: 1000

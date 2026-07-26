@@ -1,0 +1,47 @@
+$kind: http-request
+description: |-
+  Authenticate with email and password.
+
+  **Expected response:** 200 OK
+  ```json
+  {
+    "message": "Login successful.",
+    "user": { "id": 1, "email": "...", "full_name": "...", "date_joined": "..." },
+    "tokens": { "access": "...", "refresh": "..." }
+  }
+  ```
+
+  The Tests script auto-saves `access` and `refresh` tokens.
+url: "{{baseUrl}}/api/accounts/login/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "user@gmail.com",
+      "password": "Password123!"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200 OK', function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test('Response has tokens', function () {
+          var json = pm.response.json();
+          pm.expect(json.tokens).to.have.property('access');
+          pm.expect(json.tokens).to.have.property('refresh');
+      });
+
+      // Auto-save tokens to collection variables
+      if (pm.response.code === 200) {
+          var json = pm.response.json();
+          pm.collectionVariables.set('accessToken', json.tokens.access);
+          pm.collectionVariables.set('refreshToken', json.tokens.refresh);
+          console.log('Tokens saved. Access:', json.tokens.access.substring(0, 20) + '...');
+      }
+    language: text/javascript
+order: 2000

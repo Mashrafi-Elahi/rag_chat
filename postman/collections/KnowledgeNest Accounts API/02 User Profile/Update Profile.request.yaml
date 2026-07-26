@@ -1,0 +1,39 @@
+$kind: http-request
+description: |-
+  Update the authenticated user's profile. Currently only `full_name` can be changed.
+
+  **Requires:** `Authorization: Bearer {{accessToken}}`
+
+  **Expected response:** 200 OK
+  ```json
+  {
+    "id": 1,
+    "email": "user@gmail.com",
+    "full_name": "Updated Name",
+    "date_joined": "2026-07-26T07:36:06Z"
+  }
+  ```
+url: "{{baseUrl}}/api/accounts/profile/"
+method: PATCH
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{accessToken}}
+body:
+  type: json
+  content: |-
+    {
+      "full_name": "Updated Name"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200 OK', function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test('full_name updated', function () {
+          var json = pm.response.json();
+          pm.expect(json.full_name).to.eql('Updated Name');
+      });
+    language: text/javascript
+order: 2000

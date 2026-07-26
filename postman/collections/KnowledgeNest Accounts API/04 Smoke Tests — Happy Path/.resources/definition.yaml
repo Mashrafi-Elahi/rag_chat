@@ -1,0 +1,3 @@
+$kind: collection
+description: Run these requests in order to verify the full flow works end-to-end.
+order: 4000

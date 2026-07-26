@@ -1,0 +1,20 @@
+$kind: http-request
+url: "{{baseUrl}}/api/accounts/logout/"
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer {{accessToken}}
+body:
+  type: json
+  content: |-
+    {
+      "refresh": "{{refreshToken}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      pm.collectionVariables.set('accessToken', '');
+      pm.collectionVariables.set('refreshToken', '');
+    language: text/javascript
+order: 6000

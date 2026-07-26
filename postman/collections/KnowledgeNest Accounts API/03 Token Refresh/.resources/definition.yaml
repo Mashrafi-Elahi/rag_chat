@@ -1,0 +1,3 @@
+$kind: collection
+description: Refresh an expired access token using the refresh token.
+order: 3000

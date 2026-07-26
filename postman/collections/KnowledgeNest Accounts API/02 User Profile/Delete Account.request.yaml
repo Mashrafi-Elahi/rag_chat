@@ -1,0 +1,36 @@
+$kind: http-request
+description: |-
+  Permanently delete the authenticated user's account.
+
+  ⚠️ **This action is irreversible.**
+
+  **Requires:** `Authorization: Bearer {{accessToken}}`
+
+  **Expected response:** 200 OK
+  ```json
+  { "message": "Account deleted successfully" }
+  ```
+url: "{{baseUrl}}/api/accounts/profile/"
+method: DELETE
+headers:
+  Authorization: Bearer {{accessToken}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200 OK', function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test('Deletion message returned', function () {
+          var json = pm.response.json();
+          pm.expect(json.message).to.include('deleted');
+      });
+
+      // Clear tokens after account deletion
+      if (pm.response.code === 200) {
+          pm.collectionVariables.set('accessToken', '');
+          pm.collectionVariables.set('refreshToken', '');
+          console.log('Account deleted. Tokens cleared.');
+      }
+    language: text/javascript
+order: 3000

@@ -1,0 +1,35 @@
+$kind: http-request
+description: |-
+  Retrieve the authenticated user's profile.
+
+  **Requires:** `Authorization: Bearer {{accessToken}}`
+
+  **Expected response:** 200 OK
+  ```json
+  {
+    "id": 1,
+    "email": "user@gmail.com",
+    "full_name": "Test User",
+    "date_joined": "2026-07-26T07:36:06Z"
+  }
+  ```
+url: "{{baseUrl}}/api/accounts/profile/"
+method: GET
+headers:
+  Authorization: Bearer {{accessToken}}
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200 OK', function () {
+          pm.response.to.have.status(200);
+      });
+
+      pm.test('Profile has required fields', function () {
+          var json = pm.response.json();
+          pm.expect(json).to.have.property('id');
+          pm.expect(json).to.have.property('email');
+          pm.expect(json).to.have.property('full_name');
+          pm.expect(json).to.have.property('date_joined');
+      });
+    language: text/javascript
+order: 1000

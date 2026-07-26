@@ -1,0 +1,24 @@
+$kind: http-request
+url: "{{baseUrl}}/api/accounts/register/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "smoke@example.com",
+      "password": "SmokeTest123!",
+      "full_name": "Smoke User"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 201', () => pm.response.to.have.status(201));
+      if (pm.response.code === 201) {
+          var d = pm.response.json();
+          pm.collectionVariables.set('accessToken', d.tokens.access);
+          pm.collectionVariables.set('refreshToken', d.tokens.refresh);
+      }
+    language: text/javascript
+order: 1000

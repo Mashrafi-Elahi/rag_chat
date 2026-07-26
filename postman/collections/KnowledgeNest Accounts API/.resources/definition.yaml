@@ -1,0 +1,16 @@
+$kind: collection
+description: |-
+  Complete Postman collection for KnowledgeNest authentication and user profile APIs.
+
+  ## Setup
+  1. Import this file into Postman.
+  2. Create an environment named **KnowledgeNest Local** with variable `baseUrl = http://127.0.0.1:8000`.
+  3. Run **Register** or **Login** — the Tests script auto-saves tokens to environment variables.
+  4. All protected requests use `{{accessToken}}` automatically.
+
+  ## Flow
+  Register → Login → (access token saved) → Use protected endpoints
+variables:
+  baseUrl: http://127.0.0.1:8000
+  accessToken: ""
+  refreshToken: ""

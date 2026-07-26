@@ -1,0 +1,35 @@
+$kind: http-request
+description: |-
+  Get a new access token using the refresh token.
+
+  Use this when the access token expires (after 60 minutes by default).
+
+  **Expected response:** 200 OK
+  ```json
+  { "access": "new_jwt_access_token" }
+  ```
+url: "{{baseUrl}}/api/auth/token/refresh/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "refresh": "{{refreshToken}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200 OK', function () {
+          pm.response.to.have.status(200);
+      });
+
+      // Auto-update access token
+      if (pm.response.code === 200) {
+          var json = pm.response.json();
+          pm.collectionVariables.set('accessToken', json.access);
+          console.log('Access token refreshed.');
+      }
+    language: text/javascript
+order: 1000

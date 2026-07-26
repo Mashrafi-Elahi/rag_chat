@@ -1,0 +1,24 @@
+$kind: http-request
+url: "{{baseUrl}}/api/accounts/login/"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "smoke@example.com",
+      "password": "SmokeTest123!"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test('Status 200', () => pm.response.to.have.status(200));
+      if (pm.response.code === 200) {
+          var d = pm.response.json();
+          pm.collectionVariables.set('accessToken', d.tokens.access);
+          pm.collectionVariables.set('refreshToken', d.tokens.refresh);
+          console.log('Access token saved.');
+      }
+    language: text/javascript
+order: 2000
