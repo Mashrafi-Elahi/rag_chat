@@ -1,35 +1,13 @@
-<<<<<<< HEAD
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
-
-from .models import ChatSession
-from .serializers import ChatSessionSerializer
-
-
-class ChatSessionViewSet(viewsets.ModelViewSet):
-    serializer_class = ChatSessionSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        return ChatSession.objects.filter(user=self.request.user)
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-=======
-# pyrefly: ignore [missing-import]
 from rest_framework import mixins, status, viewsets
-# pyrefly: ignore [missing-import]
 from rest_framework.permissions import IsAuthenticated
-# pyrefly: ignore [missing-import]
 from rest_framework.response import Response
-# pyrefly: ignore [missing-import]
 from rest_framework.views import APIView
 
 from .models import ChatSession
 from .serializers import (
-    ChatSessionSerializer,
-    ChatSessionDetailSerializer,
     ChatMessageSerializer,
+    ChatSessionDetailSerializer,
+    ChatSessionSerializer,
     CreateMessageSerializer,
 )
 
@@ -107,13 +85,4 @@ class ChatMessageListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
         result = serializer.save()
 
-        return Response(
-            {
-                "user_message": ChatMessageSerializer(result["user_message"]).data,
-                "assistant_message": ChatMessageSerializer(
-                    result["assistant_message"]
-                ).data,
-            },
-            status=status.HTTP_201_CREATED,
-        )
->>>>>>> 908f063ed97abdc05568b62841a142e503db4cb3
+        return Response(result, status=status.HTTP_201_CREATED)
