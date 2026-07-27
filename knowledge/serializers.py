@@ -51,6 +51,36 @@ class DocumentSerializer(serializers.ModelSerializer):
             "updated_at",
         )
 
+    def validate_file(self, value):
+        if value is None:
+            return value
+
+        ALLOWED_SOURCE_EXTENSIONS = {
+            Document.SourceType.PDF: {"pdf"},
+            Document.SourceType.DOCX: {"docx"},
+            Document.SourceType.TXT: {"txt"},
+            Document.SourceType.WEBSITE: set(),
+        }
+        MAX_UPLOAD_MB = 50
+
+        source_type = self.initial_data.get("source_type", "")
+        allowed = ALLOWED_SOURCE_EXTENSIONS.get(source_type, set())
+
+        if allowed:
+            ext = value.name.rsplit(".", 1)[-1].lower() if "." in value.name else ""
+            if ext not in allowed:
+                raise serializers.ValidationError(
+                    f"File extension '.{ext}' is not allowed for source type '{source_type}'. "
+                    f"Allowed extensions: {', '.join(allowed)}"
+                )
+
+        if value.size > MAX_UPLOAD_MB * 1024 * 1024:
+            raise serializers.ValidationError(
+                f"File size ({value.size // (1024 * 1024)} MB) exceeds the maximum allowed limit of {MAX_UPLOAD_MB} MB."
+            )
+
+        return value
+
     def validate(self, attrs):
         """
         Validation rules:
@@ -66,13 +96,12 @@ class DocumentSerializer(serializers.ModelSerializer):
         if source_type == Document.SourceType.WEBSITE:
             if not source_url:
                 raise serializers.ValidationError(
-                    {"source_url": "A website URL is required."}
+                    {"source_url": "A website URL is required for WEBSITE source type."}
                 )
-
         else:
             if not file:
                 raise serializers.ValidationError(
-                    {"file": "A file is required for this source type."}
+                    {"file": f"A file is required for source type '{source_type}'."}
                 )
 
         return attrs
