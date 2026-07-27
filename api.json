@@ -1,0 +1,1304 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "RAG Chat API",
+    "description": "API documentation for the RAG Chat application",
+    "version": "v1"
+  },
+  "host": "127.0.0.1:8000",
+  "schemes": [
+    "http"
+  ],
+  "basePath": "/api",
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "securityDefinitions": {
+    "Bearer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "JWT Authorization header.\n\nFormat: **Bearer &lt;access_token&gt;**\n\nGet a token from POST /api/accounts/login/"
+    }
+  },
+  "security": [
+    {
+      "Bearer": []
+    }
+  ],
+  "paths": {
+    "/accounts/change-password/": {
+      "post": {
+        "operationId": "auth_change_password",
+        "summary": "Change password",
+        "description": "Change the current user's password.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.\n\nThe `old_password` must match the current password. The `new_password` must be different and pass Django's password validators.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "required": [
+                "old_password",
+                "new_password"
+              ],
+              "type": "object",
+              "properties": {
+                "old_password": {
+                  "type": "string",
+                  "format": "password",
+                  "example": "Password123!"
+                },
+                "new_password": {
+                  "type": "string",
+                  "format": "password",
+                  "example": "NewPassword123!",
+                  "minLength": 8
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password changed successfully.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            },
+            "examples": {
+              "application/json": {
+                "message": "Password changed successfully"
+              }
+            }
+          },
+          "400": {
+            "description": "Old password incorrect or new password fails validation."
+          },
+          "401": {
+            "description": "Authentication required. Include `Authorization: Bearer <access_token>`."
+          }
+        },
+        "tags": [
+          "Authentication"
+        ]
+      },
+      "parameters": []
+    },
+    "/accounts/forgot-password/": {
+      "post": {
+        "operationId": "auth_forgot_password",
+        "summary": "Forgot password",
+        "description": "Request a password-reset email.\n\nA **generic response** is always returned \u00e2\u20ac\u201d whether or not the email is registered \u00e2\u20ac\u201d to prevent account enumeration.\n\nEmail delivery is a placeholder for now.\n\nNo `Authorization` header is required for this endpoint.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "required": [
+                "email"
+              ],
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "user@gmail.com"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Generic response sent regardless of whether the email exists.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            },
+            "examples": {
+              "application/json": {
+                "message": "Password reset email sent"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error."
+          }
+        },
+        "tags": [
+          "Authentication"
+        ],
+        "security": []
+      },
+      "parameters": []
+    },
+    "/accounts/login/": {
+      "post": {
+        "operationId": "auth_login",
+        "summary": "Login",
+        "description": "Authenticate using **email** and **password**.\n\nReturns JWT `access` and `refresh` tokens.\n\nUse the `access` token in the `Authorization: Bearer <access_token>` header for all protected endpoints.\n\nNo `Authorization` header is required for this endpoint.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "required": [
+                "email",
+                "password"
+              ],
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "user@gmail.com"
+                },
+                "password": {
+                  "type": "string",
+                  "format": "password",
+                  "example": "Password123!"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login successful.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "full_name": {
+                      "type": "string"
+                    },
+                    "date_joined": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "tokens": {
+                  "type": "object",
+                  "properties": {
+                    "access": {
+                      "description": "JWT access token",
+                      "type": "string"
+                    },
+                    "refresh": {
+                      "description": "JWT refresh token",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "examples": {
+              "application/json": {
+                "message": "Login successful.",
+                "user": {
+                  "id": 1,
+                  "email": "user@gmail.com",
+                  "full_name": "Test User",
+                  "date_joined": "2026-07-26T07:36:06Z"
+                },
+                "tokens": {
+                  "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                  "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid email or password."
+          }
+        },
+        "tags": [
+          "Authentication"
+        ],
+        "security": []
+      },
+      "parameters": []
+    },
+    "/accounts/logout/": {
+      "post": {
+        "operationId": "auth_logout",
+        "summary": "Logout",
+        "description": "Validate that the provided refresh token belongs to the current user.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.\n\nAfter a successful response, the **client must delete** its stored access and refresh tokens. Server-side blacklisting is not used in this implementation.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "required": [
+                "refresh"
+              ],
+              "type": "object",
+              "properties": {
+                "refresh": {
+                  "description": "The JWT refresh token to invalidate.",
+                  "type": "string",
+                  "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout successful.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            },
+            "examples": {
+              "application/json": {
+                "message": "Logout successful"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or expired refresh token."
+          },
+          "401": {
+            "description": "Authentication required. Include `Authorization: Bearer <access_token>`."
+          }
+        },
+        "tags": [
+          "Authentication"
+        ]
+      },
+      "parameters": []
+    },
+    "/accounts/profile/": {
+      "get": {
+        "operationId": "profile_get",
+        "summary": "Get profile",
+        "description": "Return the authenticated user's profile data.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "User profile.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email"
+                },
+                "full_name": {
+                  "type": "string"
+                },
+                "date_joined": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            "examples": {
+              "application/json": {
+                "id": 1,
+                "email": "user@gmail.com",
+                "full_name": "Test User",
+                "date_joined": "2026-07-26T07:36:06Z"
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required. Include `Authorization: Bearer <access_token>`."
+          }
+        },
+        "tags": [
+          "User Profile"
+        ]
+      },
+      "patch": {
+        "operationId": "profile_update",
+        "summary": "Update profile",
+        "description": "Update the authenticated user's profile. Currently only **full_name** may be changed.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "full_name": {
+                  "type": "string",
+                  "example": "Updated Name"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile updated.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email"
+                },
+                "full_name": {
+                  "type": "string"
+                },
+                "date_joined": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            "examples": {
+              "application/json": {
+                "id": 1,
+                "email": "user@gmail.com",
+                "full_name": "Updated Name",
+                "date_joined": "2026-07-26T07:36:06Z"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error."
+          },
+          "401": {
+            "description": "Authentication required. Include `Authorization: Bearer <access_token>`."
+          }
+        },
+        "tags": [
+          "User Profile"
+        ]
+      },
+      "delete": {
+        "operationId": "profile_delete",
+        "summary": "Delete account",
+        "description": "Permanently delete the authenticated user's account. **This action is irreversible.**\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Account deleted.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            },
+            "examples": {
+              "application/json": {
+                "message": "Account deleted successfully"
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required. Include `Authorization: Bearer <access_token>`."
+          }
+        },
+        "tags": [
+          "User Profile"
+        ]
+      },
+      "parameters": []
+    },
+    "/accounts/register/": {
+      "post": {
+        "operationId": "auth_register",
+        "summary": "Register a new user",
+        "description": "Create an account with **email**, **password**, and an optional **full_name**.\n\nOn success, returns the created user data along with JWT `access` and `refresh` tokens.\n\nNo `Authorization` header is required for this endpoint.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "required": [
+                "email",
+                "password"
+              ],
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "user@gmail.com"
+                },
+                "password": {
+                  "type": "string",
+                  "format": "password",
+                  "example": "Password123!",
+                  "minLength": 8
+                },
+                "full_name": {
+                  "type": "string",
+                  "example": "Test User"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Account created successfully.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "full_name": {
+                      "type": "string"
+                    },
+                    "date_joined": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "tokens": {
+                  "type": "object",
+                  "properties": {
+                    "access": {
+                      "description": "JWT access token",
+                      "type": "string"
+                    },
+                    "refresh": {
+                      "description": "JWT refresh token",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "examples": {
+              "application/json": {
+                "message": "Account created successfully.",
+                "user": {
+                  "id": 1,
+                  "email": "user@gmail.com",
+                  "full_name": "Test User",
+                  "date_joined": "2026-07-26T07:36:06Z"
+                },
+                "tokens": {
+                  "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                  "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error."
+          }
+        },
+        "tags": [
+          "Authentication"
+        ],
+        "security": []
+      },
+      "parameters": []
+    },
+    "/auth/token/": {
+      "post": {
+        "operationId": "auth_token_create",
+        "description": "Takes a set of user credentials and returns an access and refresh JSON web\ntoken pair to prove the authentication of those credentials.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TokenObtainPair"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/TokenObtainPair"
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      },
+      "parameters": []
+    },
+    "/auth/token/refresh/": {
+      "post": {
+        "operationId": "auth_token_refresh_create",
+        "description": "Takes a refresh type JSON web token and returns an access type JSON web\ntoken if the refresh token is valid.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TokenRefresh"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/TokenRefresh"
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      },
+      "parameters": []
+    },
+    "/chat/sessions/": {
+      "get": {
+        "operationId": "chat_sessions_list",
+        "description": "GET    /api/chat/sessions/\nPOST   /api/chat/sessions/\nGET    /api/chat/sessions/{id}/\nDELETE /api/chat/sessions/{id}/",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "A page number within the paginated result set.",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "required": [
+                "count",
+                "results"
+              ],
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "next": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "previous": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/ChatSession"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "post": {
+        "operationId": "chat_sessions_create",
+        "description": "GET    /api/chat/sessions/\nPOST   /api/chat/sessions/\nGET    /api/chat/sessions/{id}/\nDELETE /api/chat/sessions/{id}/",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ChatSession"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/ChatSession"
+            }
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "parameters": []
+    },
+    "/chat/sessions/{id}/": {
+      "get": {
+        "operationId": "chat_sessions_read",
+        "description": "GET    /api/chat/sessions/\nPOST   /api/chat/sessions/\nGET    /api/chat/sessions/{id}/\nDELETE /api/chat/sessions/{id}/",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/ChatSessionDetail"
+            }
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "delete": {
+        "operationId": "chat_sessions_delete",
+        "description": "GET    /api/chat/sessions/\nPOST   /api/chat/sessions/\nGET    /api/chat/sessions/{id}/\nDELETE /api/chat/sessions/{id}/",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/chat/sessions/{session_id}/messages/": {
+      "get": {
+        "operationId": "chat_sessions_messages_list",
+        "description": "GET  /api/chat/sessions/{session_id}/messages/\nPOST /api/chat/sessions/{session_id}/messages/",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "post": {
+        "operationId": "chat_sessions_messages_create",
+        "description": "GET  /api/chat/sessions/{session_id}/messages/\nPOST /api/chat/sessions/{session_id}/messages/",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "session_id",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/chat/token/": {
+      "post": {
+        "operationId": "chat_token_create",
+        "description": "Takes a set of user credentials and returns an access and refresh JSON web\ntoken pair to prove the authentication of those credentials.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TokenObtainPair"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/TokenObtainPair"
+            }
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "parameters": []
+    },
+    "/chat/token/refresh/": {
+      "post": {
+        "operationId": "chat_token_refresh_create",
+        "description": "Takes a refresh type JSON web token and returns an access type JSON web\ntoken if the refresh token is valid.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TokenRefresh"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/TokenRefresh"
+            }
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "parameters": []
+    },
+    "/knowledge/bases/": {
+      "get": {
+        "operationId": "knowledge_bases_list",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "A page number within the paginated result set.",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "required": [
+                "count",
+                "results"
+              ],
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "next": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "previous": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/KnowledgeBase"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "knowledge_bases_create",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "parameters": []
+    },
+    "/knowledge/bases/{id}/": {
+      "get": {
+        "operationId": "knowledge_bases_read",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "put": {
+        "operationId": "knowledge_bases_update",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "knowledge_bases_partial_update",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "delete": {
+        "operationId": "knowledge_bases_delete",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/knowledge/bases/{kb_id}/documents/": {
+      "get": {
+        "operationId": "knowledge_bases_documents_list",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "consumes": [
+          "multipart/form-data",
+          "application/x-www-form-urlencoded"
+        ],
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "knowledge_bases_documents_create",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "consumes": [
+          "multipart/form-data",
+          "application/x-www-form-urlencoded"
+        ],
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "kb_id",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/knowledge/bases/{kb_id}/documents/{doc_id}/": {
+      "get": {
+        "operationId": "knowledge_bases_documents_read",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "put": {
+        "operationId": "knowledge_bases_documents_update",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "knowledge_bases_documents_partial_update",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "delete": {
+        "operationId": "knowledge_bases_documents_delete",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "kb_id",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "doc_id",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "TokenObtainPair": {
+      "required": [
+        "email",
+        "password"
+      ],
+      "type": "object",
+      "properties": {
+        "email": {
+          "title": "Email",
+          "type": "string",
+          "minLength": 1
+        },
+        "password": {
+          "title": "Password",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "TokenRefresh": {
+      "required": [
+        "refresh"
+      ],
+      "type": "object",
+      "properties": {
+        "refresh": {
+          "title": "Refresh",
+          "type": "string",
+          "minLength": 1
+        },
+        "access": {
+          "title": "Access",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        }
+      }
+    },
+    "ChatSession": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "format": "uuid",
+          "readOnly": true
+        },
+        "title": {
+          "title": "Title",
+          "type": "string",
+          "maxLength": 255
+        },
+        "knowledge_base": {
+          "title": "Knowledge base",
+          "type": "string",
+          "format": "uuid",
+          "x-nullable": true
+        },
+        "created_at": {
+          "title": "Created at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "updated_at": {
+          "title": "Updated at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "message_count": {
+          "title": "Message count",
+          "type": "string",
+          "readOnly": true
+        }
+      }
+    },
+    "ChatMessage": {
+      "required": [
+        "content"
+      ],
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "format": "uuid",
+          "readOnly": true
+        },
+        "role": {
+          "title": "Role",
+          "type": "string",
+          "enum": [
+            "user",
+            "assistant"
+          ],
+          "readOnly": true
+        },
+        "content": {
+          "title": "Content",
+          "type": "string",
+          "minLength": 1
+        },
+        "created_at": {
+          "title": "Created at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        }
+      }
+    },
+    "ChatSessionDetail": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "format": "uuid",
+          "readOnly": true
+        },
+        "title": {
+          "title": "Title",
+          "type": "string",
+          "maxLength": 255
+        },
+        "knowledge_base": {
+          "title": "Knowledge base",
+          "type": "string",
+          "format": "uuid",
+          "x-nullable": true
+        },
+        "created_at": {
+          "title": "Created at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "updated_at": {
+          "title": "Updated at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "message_count": {
+          "title": "Message count",
+          "type": "string",
+          "readOnly": true
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChatMessage"
+          },
+          "readOnly": true
+        }
+      }
+    },
+    "KnowledgeBase": {
+      "required": [
+        "name"
+      ],
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "format": "uuid",
+          "readOnly": true
+        },
+        "owner": {
+          "title": "Owner",
+          "type": "integer",
+          "readOnly": true
+        },
+        "name": {
+          "title": "Name",
+          "type": "string",
+          "maxLength": 255,
+          "minLength": 1
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "chroma_collection_id": {
+          "title": "Chroma collection id",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        },
+        "created_at": {
+          "title": "Created at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "updated_at": {
+          "title": "Updated at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        }
+      }
+    }
+  }
+}

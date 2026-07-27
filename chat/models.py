@@ -7,7 +7,7 @@ from knowledge.models import KnowledgeBase
 
 
 class ChatSession(models.Model):
-    """A conversation thread tied to one knowledge base."""
+    """A conversation thread optionally tied to one knowledge base."""
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
@@ -19,6 +19,8 @@ class ChatSession(models.Model):
         KnowledgeBase,
         on_delete=models.CASCADE,
         related_name="chat_sessions",
+        null=True,   # <-- ALLOWS NULL IN DATABASE WHEN NO FILE IS UPLOADED
+        blank=True,  # <-- ALLOWS BLANK/NONE IN SERIALIZERS & FORMS
     )
     title = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
