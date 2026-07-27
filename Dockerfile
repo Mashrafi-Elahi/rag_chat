@@ -21,6 +21,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+RUN python manage.py collectstatic --noinput
 
 RUN mkdir -p /app/chroma_db \
     && adduser --disabled-password --gecos "" django-user \

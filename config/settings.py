@@ -25,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # ---------------------------------------------------------------------------
 _secret = os.getenv("SECRET_KEY")
 if not _secret:
-    if any(cmd in sys.argv for cmd in ("runserver", "test", "shell")):
+    if any(cmd in sys.argv for cmd in ("runserver", "test", "shell", "collectstatic")):
         _secret = "dev-only-insecure-do-not-deploy"
     else:
         raise RuntimeError(
@@ -62,6 +62,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -134,6 +135,11 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Local media storage for uploaded PDF / DOCX / TXT files
 MEDIA_URL = "/media/"
@@ -198,6 +204,7 @@ CORS_ALLOWED_ORIGINS = [
 # Production security headers (only when DEBUG is off)
 # ---------------------------------------------------------------------------
 if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000          # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -269,6 +276,7 @@ LOGGING = {
 # Swagger / drf-yasg — JWT Bearer Authorization button
 # ---------------------------------------------------------------------------
 SWAGGER_SETTINGS = {
+    "VALIDATOR_URL": None,
     "SECURITY_DEFINITIONS": {
         "Bearer": {
             "type": "apiKey",
