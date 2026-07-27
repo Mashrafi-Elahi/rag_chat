@@ -1,6 +1,7 @@
-# Docker deployment files ignore rules
 .git
 .env
+.venv/
+venv/
 __pycache__/
 *.pyc
 *.pyo
@@ -12,3 +13,5 @@ chroma_data/
 staticfiles/
 .vscode/
 .idea/
+docs/
+railway.json

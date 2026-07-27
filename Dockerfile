@@ -25,5 +25,5 @@ COPY . /app/
 # Expose port (Railway / Docker default)
 EXPOSE 8000
 
-# Run migrations then start gunicorn
-CMD ["sh", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"]
+# Run migrations then start gunicorn on Railway's $PORT
+CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120"]
