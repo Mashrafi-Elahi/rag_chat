@@ -17,4 +17,9 @@ requests
 
 # LLM API client (OpenAI / OpenRouter compatible)
 openai
+
+# Database
 psycopg2-binary
+
+# Production server (Railway)
+gunicorn
