@@ -5,6 +5,7 @@
     "buildEnvironment": "V3"
   },
   "deploy": {
+    "startCommand": "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120",
     "runtime": "V2",
     "numReplicas": 1,
     "sleepApplication": false,

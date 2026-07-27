@@ -25,5 +25,5 @@ COPY . /app/
 # Expose port (Railway / Docker default)
 EXPOSE 8000
 
-# Default command (used for local docker or fallback)
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+# Run migrations then start gunicorn
+CMD ["sh", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"]
