@@ -17,3 +17,4 @@ requests
 
 # LLM API client (OpenAI / OpenRouter compatible)
 openai
+psycopg2-binary
