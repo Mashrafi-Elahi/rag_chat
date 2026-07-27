@@ -26,6 +26,8 @@ class KnowledgeBaseViewSet(viewsets.ModelViewSet):
         """
         Return only the authenticated user's knowledge bases.
         """
+        if getattr(self, "swagger_fake_view", False) or not self.request.user.is_authenticated:
+            return KnowledgeBase.objects.none()
         return KnowledgeBase.objects.filter(
             owner=self.request.user
         ).order_by("-created_at")
