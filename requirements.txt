@@ -4,14 +4,16 @@ djangorestframework-simplejwt>=5.3
 django-cors-headers>=4.3
 python-dotenv>=1.0
 
-# API docs (see docs/API_TESTING.md):
+# API docs
 drf-yasg>=1.21
 
-# Install later when you build the RAG pipeline (Step 6+ in GUIDE.md):
-# chromadb
-# sentence-transformers
-# openai          # OpenRouter is OpenAI-compatible
-# pypdf           # PDF text extraction
-# python-docx     # DOCX text extraction
-# beautifulsoup4  # website HTML → text
-# requests
+# RAG pipeline dependencies
+chromadb
+sentence-transformers
+pypdf
+python-docx
+beautifulsoup4
+requests
+
+# LLM API client (OpenAI / OpenRouter compatible)
+openai
