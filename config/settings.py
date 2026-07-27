@@ -8,6 +8,7 @@ Keep this file beginner-friendly:
 """
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -17,8 +18,27 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-me-in-production")
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+# ---------------------------------------------------------------------------
+# BUG-001 FIX — SECRET_KEY must be set in production.
+# Dev commands (runserver, test, shell) can use a fallback for convenience.
+# Any other command (migrate, collectstatic, gunicorn) MUST have a real key.
+# ---------------------------------------------------------------------------
+_secret = os.getenv("SECRET_KEY")
+if not _secret:
+    if any(cmd in sys.argv for cmd in ("runserver", "test", "shell")):
+        _secret = "dev-only-insecure-do-not-deploy"
+    else:
+        raise RuntimeError(
+            "SECRET_KEY environment variable is not set. "
+            "Generate one with: python -c \"import secrets; print(secrets.token_hex(50))\""
+        )
+SECRET_KEY = _secret
+
+# ---------------------------------------------------------------------------
+# BUG-002 FIX — Default to False. .env sets DEBUG=True for local dev.
+# ---------------------------------------------------------------------------
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 
 INSTALLED_APPS = [
@@ -31,13 +51,13 @@ INSTALLED_APPS = [
     # Third-party
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",  # BUG-003 FIX — enables logout
     "corsheaders",
     "drf_yasg",
     # Local apps
     "accounts",
     "knowledge",
     "chat",
-   
 ]
 
 MIDDLEWARE = [
@@ -87,6 +107,9 @@ if USE_POSTGRES:
             "PASSWORD": os.getenv("PG_PASSWORD", ""),
             "HOST": os.getenv("PG_HOST", "localhost"),
             "PORT": os.getenv("PG_PORT", "5432"),
+            "OPTIONS": {
+                "sslmode": "require",
+            },
         }
     }
 else:
@@ -133,20 +156,60 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    # Rate limiting — prevents brute-force and abuse
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "20/minute",
+        "user": "200/minute",
+    },
+    # Consistent error response shape
+    "EXCEPTION_HANDLER": "config.exceptions.custom_exception_handler",
 }
 
+# ---------------------------------------------------------------------------
+# BUG-003 FIX — JWT with token rotation + blacklisting
+# ---------------------------------------------------------------------------
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-    "ROTATE_REFRESH_TOKENS": False,
+    "ROTATE_REFRESH_TOKENS": True,           # issue new refresh on each refresh call
+    "BLACKLIST_AFTER_ROTATION": True,         # old refresh token becomes invalid
     "AUTH_HEADER_TYPES": ("Bearer",),
 }
 
-# CORS — allow local frontend during development
-CORS_ALLOW_ALL_ORIGINS = DEBUG
+# ---------------------------------------------------------------------------
+# BUG-004 FIX — CORS: never allow all origins; parse from env var
+# ---------------------------------------------------------------------------
+CORS_ALLOW_ALL_ORIGINS = False
+
+CORS_ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:3000,http://127.0.0.1:3000"
+    ).split(",")
+    if o.strip()
+]
 
 # ---------------------------------------------------------------------------
-# AI / RAG settings (used in later steps — not wired yet)
+# Production security headers (only when DEBUG is off)
+# ---------------------------------------------------------------------------
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000          # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = "DENY"
+
+# ---------------------------------------------------------------------------
+# AI / RAG settings
 # ---------------------------------------------------------------------------
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openai/gpt-4o-mini")
@@ -157,13 +220,54 @@ EMBEDDING_MODEL_NAME = os.getenv(
 )
 
 # ---------------------------------------------------------------------------
+# Logging — structured output for production debugging
+# ---------------------------------------------------------------------------
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        "accounts": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "knowledge": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "chat": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}
+
+# ---------------------------------------------------------------------------
 # Swagger / drf-yasg — JWT Bearer Authorization button
 # ---------------------------------------------------------------------------
-# Enables the 🔒 Authorize button in Swagger UI (/api/docs/).
-# How to use:
-#   1. POST /api/accounts/login/  → copy tokens.access
-#   2. Click Authorize → enter:  Bearer <access_token>
-#   3. All protected endpoints now work in Swagger.
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
         "Bearer": {
@@ -177,9 +281,9 @@ SWAGGER_SETTINGS = {
             ),
         }
     },
-    "USE_SESSION_AUTH": False,       # disable DRF session login in Swagger
-    "JSON_EDITOR": True,             # prettier request body editor
-    "SUPPORTED_SUBMIT_METHODS": [    # allow all HTTP methods in Try-it-out
+    "USE_SESSION_AUTH": False,
+    "JSON_EDITOR": True,
+    "SUPPORTED_SUBMIT_METHODS": [
         "get", "post", "put", "patch", "delete",
     ],
 }

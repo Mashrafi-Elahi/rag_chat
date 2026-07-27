@@ -75,6 +75,9 @@ class Document(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status"], name="document_status_idx"),
+        ]
 
     def __str__(self):
         return f"{self.title} ({self.source_type})"

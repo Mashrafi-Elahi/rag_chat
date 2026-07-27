@@ -15,3 +15,4 @@ class DocumentAdmin(admin.ModelAdmin):
     list_display = ("title", "knowledge_base", "source_type", "status", "chunk_count", "created_at")
     list_filter = ("source_type", "status", "created_at")
     search_fields = ("title", "source_url")
+    list_select_related = ("knowledge_base",)  # prevents N+1 in admin list

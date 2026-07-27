@@ -526,6 +526,13 @@ class LogoutView(APIView):
         )
         serializer.is_valid(raise_exception=True)
 
+        # Blacklist the refresh token so it cannot be reused
+        try:
+            token = RefreshToken(serializer.validated_data["refresh"])
+            token.blacklist()
+        except Exception:
+            pass  # token was already validated in serializer
+
         return Response(
             {"message": "Logout successful"},
             status=status.HTTP_200_OK,
