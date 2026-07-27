@@ -177,7 +177,7 @@ class ChatMessageCreateTests(APITestCase):
         self.client.force_authenticate(user=self.alice)
         self.url = f"/api/chat/sessions/{self.session.id}/messages/"
 
-    @patch("chat.services.rag.generate_rag_response", return_value="Mocked reply")
+    @patch("chat.serializers.generate_rag_response", return_value="Mocked reply")
     def test_post_message_creates_user_and_assistant_messages(self, _mock_rag):
         """
         Posting a message creates both a user message and an assistant reply.

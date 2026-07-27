@@ -51,7 +51,8 @@ def retrieve_context(chroma_collection_id: str, user_query: str, n_results: int 
     import chromadb  # noqa: PLC0415 — optional dependency, not forced at import time
 
     try:
-        chroma_client = chromadb.PersistentClient(path="./chroma_db")
+        chroma_path = getattr(settings, "CHROMA_DB_PATH", "./chroma_data")
+        chroma_client = chromadb.PersistentClient(path=chroma_path)
         collection = chroma_client.get_collection(name=chroma_collection_id)
 
         embedding_model = get_embedding_model()

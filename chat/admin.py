@@ -14,6 +14,7 @@ class ChatSessionAdmin(admin.ModelAdmin):
     list_display = ("title", "user", "knowledge_base", "created_at", "updated_at")
     search_fields = ("title", "user__email")
     list_filter = ("created_at",)
+    list_select_related = ("user", "knowledge_base")  # prevents N+1 on list page
     inlines = [ChatMessageInline]
 
 
