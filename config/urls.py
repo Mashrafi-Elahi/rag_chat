@@ -2,59 +2,40 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
-from rest_framework import permissions
+# pyrefly: ignore [missing-import]
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-# ---------------------------------------------------------------------------
-# Swagger / ReDoc schema view
-# ---------------------------------------------------------------------------
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
 schema_view = get_schema_view(
     openapi.Info(
-        title="KnowledgeNest Accounts API",
+        title="RAG Chat API",
         default_version="v1",
-        description="""
-## KnowledgeNest — Accounts API
-
-Full authentication and user-profile system for KnowledgeNest.
-
-### How to authenticate in Swagger
-1. Call **POST /api/accounts/login/** with your email and password.
-2. Copy the `tokens.access` value from the response.
-3. Click the **Authorize 🔒** button (top-right).
-4. In the *apiKey* field, enter: `Bearer <paste_access_token_here>`
-5. Click **Authorize** → protected endpoints will now work.
-
-### Endpoints
-| Group | Count |
-|---|---|
-| Authentication (register, login, forgot-password, change-password, logout) | 5 |
-| User Profile (get, update, delete) | 3 |
-| **Total** | **8** |
-        """,
-        contact=openapi.Contact(email="support@knowledgenest.ai"),
-        license=openapi.License(name="MIT License"),
+        description="API documentation for the RAG Chat application",
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
-    authentication_classes=[],
 )
 
+
+
 urlpatterns = [
+    # Admin
     path("admin/", admin.site.urls),
 
-    # ---------------------------------------------------------------------------
-    # JWT token utilities
-    # ---------------------------------------------------------------------------
+    # 🔐 Auth (JWT)
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
-    # ---------------------------------------------------------------------------
-    # App routes
-    # ---------------------------------------------------------------------------
+    # 👤 Accounts
     path("api/accounts/", include("accounts.urls")),
+
+    # 📚 Knowledge (PDF/DOCX/TXT upload lives here)
     path("api/knowledge/", include("knowledge.urls")),
+
+    # 💬 Chat
     path("api/chat/", include("chat.urls")),
 
     # ---------------------------------------------------------------------------
@@ -80,5 +61,9 @@ urlpatterns = [
     ),
 ]
 
+# 📁 Serve uploaded files in development
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(
+        settings.MEDIA_URL,
+        document_root=settings.MEDIA_ROOT
+    )
