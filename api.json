@@ -1,672 +1,1304 @@
 {
+  "swagger": "2.0",
   "info": {
-    "name": "KnowledgeNest Accounts API",
-    "_postman_id": "knowledgenest-accounts-v1",
-    "description": "Complete Postman collection for KnowledgeNest authentication and user profile APIs.\n\n## Setup\n1. Import this file into Postman.\n2. Create an environment named **KnowledgeNest Local** with variable `baseUrl = http://127.0.0.1:8000`.\n3. Run **Register** or **Login** — the Tests script auto-saves tokens to environment variables.\n4. All protected requests use `{{accessToken}}` automatically.\n\n## Flow\nRegister → Login → (access token saved) → Use protected endpoints",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    "title": "RAG Chat API",
+    "description": "API documentation for the RAG Chat application",
+    "version": "v1"
   },
-  "variable": [
+  "host": "127.0.0.1:8000",
+  "schemes": [
+    "http"
+  ],
+  "basePath": "/api",
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "securityDefinitions": {
+    "Bearer": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "JWT Authorization header.\n\nFormat: **Bearer &lt;access_token&gt;**\n\nGet a token from POST /api/accounts/login/"
+    }
+  },
+  "security": [
     {
-      "key": "baseUrl",
-      "value": "http://127.0.0.1:8000",
-      "description": "Base URL of the local development server"
-    },
-    {
-      "key": "accessToken",
-      "value": "",
-      "description": "JWT access token — auto-filled by Login / Register Tests script"
-    },
-    {
-      "key": "refreshToken",
-      "value": "",
-      "description": "JWT refresh token — auto-filled by Login / Register Tests script"
+      "Bearer": []
     }
   ],
-  "item": [
-    {
-      "name": "01 Authentication",
-      "description": "Public endpoints: register, login, forgot-password. Protected: change-password, logout.",
-      "item": [
-        {
-          "name": "Register",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+  "paths": {
+    "/accounts/change-password/": {
+      "post": {
+        "operationId": "auth_change_password",
+        "summary": "Change password",
+        "description": "Change the current user's password.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.\n\nThe `old_password` must match the current password. The `new_password` must be different and pass Django's password validators.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "required": [
+                "old_password",
+                "new_password"
+              ],
+              "type": "object",
+              "properties": {
+                "old_password": {
+                  "type": "string",
+                  "format": "password",
+                  "example": "Password123!"
+                },
+                "new_password": {
+                  "type": "string",
+                  "format": "password",
+                  "example": "NewPassword123!",
+                  "minLength": 8
+                }
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"user@gmail.com\",\n  \"password\": \"Password123!\",\n  \"full_name\": \"Test User\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Password changed successfully.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
                 }
               }
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/register/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "register", ""]
-            },
-            "description": "Create a new user account.\n\n**Expected response:** 201 Created\n```json\n{\n  \"message\": \"Account created successfully.\",\n  \"user\": { \"id\": 1, \"email\": \"...\", \"full_name\": \"...\", \"date_joined\": \"...\" },\n  \"tokens\": { \"access\": \"...\", \"refresh\": \"...\" }\n}\n```"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 201 Created', function () {",
-                  "    pm.response.to.have.status(201);",
-                  "});",
-                  "",
-                  "pm.test('Response has tokens', function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json).to.have.property('tokens');",
-                  "    pm.expect(json.tokens).to.have.property('access');",
-                  "    pm.expect(json.tokens).to.have.property('refresh');",
-                  "});",
-                  "",
-                  "// Auto-save tokens to environment",
-                  "if (pm.response.code === 201) {",
-                  "    var json = pm.response.json();",
-                  "    pm.collectionVariables.set('accessToken', json.tokens.access);",
-                  "    pm.collectionVariables.set('refreshToken', json.tokens.refresh);",
-                  "    console.log('Tokens saved to collection variables.');",
-                  "}"
-                ]
+            "examples": {
+              "application/json": {
+                "message": "Password changed successfully"
               }
             }
-          ]
+          },
+          "400": {
+            "description": "Old password incorrect or new password fails validation."
+          },
+          "401": {
+            "description": "Authentication required. Include `Authorization: Bearer <access_token>`."
+          }
         },
-        {
-          "name": "Login",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+        "tags": [
+          "Authentication"
+        ]
+      },
+      "parameters": []
+    },
+    "/accounts/forgot-password/": {
+      "post": {
+        "operationId": "auth_forgot_password",
+        "summary": "Forgot password",
+        "description": "Request a password-reset email.\n\nA **generic response** is always returned \u00e2\u20ac\u201d whether or not the email is registered \u00e2\u20ac\u201d to prevent account enumeration.\n\nEmail delivery is a placeholder for now.\n\nNo `Authorization` header is required for this endpoint.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "required": [
+                "email"
+              ],
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "user@gmail.com"
+                }
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"user@gmail.com\",\n  \"password\": \"Password123!\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Generic response sent regardless of whether the email exists.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
                 }
               }
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/login/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "login", ""]
-            },
-            "description": "Authenticate with email and password.\n\n**Expected response:** 200 OK\n```json\n{\n  \"message\": \"Login successful.\",\n  \"user\": { \"id\": 1, \"email\": \"...\", \"full_name\": \"...\", \"date_joined\": \"...\" },\n  \"tokens\": { \"access\": \"...\", \"refresh\": \"...\" }\n}\n```\n\nThe Tests script auto-saves `access` and `refresh` tokens."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200 OK', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('Response has tokens', function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json.tokens).to.have.property('access');",
-                  "    pm.expect(json.tokens).to.have.property('refresh');",
-                  "});",
-                  "",
-                  "// Auto-save tokens to collection variables",
-                  "if (pm.response.code === 200) {",
-                  "    var json = pm.response.json();",
-                  "    pm.collectionVariables.set('accessToken', json.tokens.access);",
-                  "    pm.collectionVariables.set('refreshToken', json.tokens.refresh);",
-                  "    console.log('Tokens saved. Access:', json.tokens.access.substring(0, 20) + '...');",
-                  "}"
-                ]
+            "examples": {
+              "application/json": {
+                "message": "Password reset email sent"
               }
             }
-          ]
+          },
+          "400": {
+            "description": "Validation error."
+          }
         },
-        {
-          "name": "Forgot Password",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
+        "tags": [
+          "Authentication"
+        ],
+        "security": []
+      },
+      "parameters": []
+    },
+    "/accounts/login/": {
+      "post": {
+        "operationId": "auth_login",
+        "summary": "Login",
+        "description": "Authenticate using **email** and **password**.\n\nReturns JWT `access` and `refresh` tokens.\n\nUse the `access` token in the `Authorization: Bearer <access_token>` header for all protected endpoints.\n\nNo `Authorization` header is required for this endpoint.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "required": [
+                "email",
+                "password"
+              ],
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "user@gmail.com"
+                },
+                "password": {
+                  "type": "string",
+                  "format": "password",
+                  "example": "Password123!"
+                }
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"user@gmail.com\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Login successful.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "full_name": {
+                      "type": "string"
+                    },
+                    "date_joined": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "tokens": {
+                  "type": "object",
+                  "properties": {
+                    "access": {
+                      "description": "JWT access token",
+                      "type": "string"
+                    },
+                    "refresh": {
+                      "description": "JWT refresh token",
+                      "type": "string"
+                    }
+                  }
                 }
               }
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/forgot-password/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "forgot-password", ""]
-            },
-            "description": "Request a password-reset email.\n\nAlways returns a generic 200 response to prevent account enumeration.\n\n**Expected response:** 200 OK\n```json\n{ \"message\": \"Password reset email sent\" }\n```"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200 OK', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('Generic message returned', function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json).to.have.property('message');",
-                  "});"
-                ]
+            "examples": {
+              "application/json": {
+                "message": "Login successful.",
+                "user": {
+                  "id": 1,
+                  "email": "user@gmail.com",
+                  "full_name": "Test User",
+                  "date_joined": "2026-07-26T07:36:06Z"
+                },
+                "tokens": {
+                  "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                  "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
               }
             }
-          ]
+          },
+          "400": {
+            "description": "Invalid email or password."
+          }
         },
-        {
-          "name": "Change Password",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
+        "tags": [
+          "Authentication"
+        ],
+        "security": []
+      },
+      "parameters": []
+    },
+    "/accounts/logout/": {
+      "post": {
+        "operationId": "auth_logout",
+        "summary": "Logout",
+        "description": "Validate that the provided refresh token belongs to the current user.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.\n\nAfter a successful response, the **client must delete** its stored access and refresh tokens. Server-side blacklisting is not used in this implementation.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "required": [
+                "refresh"
+              ],
+              "type": "object",
+              "properties": {
+                "refresh": {
+                  "description": "The JWT refresh token to invalidate.",
+                  "type": "string",
+                  "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"old_password\": \"Password123!\",\n  \"new_password\": \"NewPassword123!\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout successful.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
                 }
               }
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/change-password/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "change-password", ""]
-            },
-            "description": "Change the authenticated user's password.\n\n**Requires:** `Authorization: Bearer {{accessToken}}`\n\n**Expected response:** 200 OK\n```json\n{ \"message\": \"Password changed successfully\" }\n```"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200 OK', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('Password changed message returned', function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json.message).to.include('changed');",
-                  "});"
-                ]
+            "examples": {
+              "application/json": {
+                "message": "Logout successful"
               }
             }
-          ]
+          },
+          "400": {
+            "description": "Invalid or expired refresh token."
+          },
+          "401": {
+            "description": "Authentication required. Include `Authorization: Bearer <access_token>`."
+          }
         },
-        {
-          "name": "Logout",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+        "tags": [
+          "Authentication"
+        ]
+      },
+      "parameters": []
+    },
+    "/accounts/profile/": {
+      "get": {
+        "operationId": "profile_get",
+        "summary": "Get profile",
+        "description": "Return the authenticated user's profile data.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "User profile.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email"
+                },
+                "full_name": {
+                  "type": "string"
+                },
+                "date_joined": {
+                  "type": "string",
+                  "format": "date-time"
                 }
               }
             },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/logout/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "logout", ""]
-            },
-            "description": "Logout the current user by validating the refresh token.\n\n**Requires:** `Authorization: Bearer {{accessToken}}`\n\nAfter a successful response, delete both tokens from the client.\n\n**Expected response:** 200 OK\n```json\n{ \"message\": \"Logout successful\" }\n```"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200 OK', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "// Clear tokens after successful logout",
-                  "if (pm.response.code === 200) {",
-                  "    pm.collectionVariables.set('accessToken', '');",
-                  "    pm.collectionVariables.set('refreshToken', '');",
-                  "    console.log('Tokens cleared after logout.');",
-                  "}"
-                ]
+            "examples": {
+              "application/json": {
+                "id": 1,
+                "email": "user@gmail.com",
+                "full_name": "Test User",
+                "date_joined": "2026-07-26T07:36:06Z"
               }
             }
-          ]
+          },
+          "401": {
+            "description": "Authentication required. Include `Authorization: Bearer <access_token>`."
+          }
+        },
+        "tags": [
+          "User Profile"
+        ]
+      },
+      "patch": {
+        "operationId": "profile_update",
+        "summary": "Update profile",
+        "description": "Update the authenticated user's profile. Currently only **full_name** may be changed.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "type": "object",
+              "properties": {
+                "full_name": {
+                  "type": "string",
+                  "example": "Updated Name"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profile updated.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer"
+                },
+                "email": {
+                  "type": "string",
+                  "format": "email"
+                },
+                "full_name": {
+                  "type": "string"
+                },
+                "date_joined": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            },
+            "examples": {
+              "application/json": {
+                "id": 1,
+                "email": "user@gmail.com",
+                "full_name": "Updated Name",
+                "date_joined": "2026-07-26T07:36:06Z"
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error."
+          },
+          "401": {
+            "description": "Authentication required. Include `Authorization: Bearer <access_token>`."
+          }
+        },
+        "tags": [
+          "User Profile"
+        ]
+      },
+      "delete": {
+        "operationId": "profile_delete",
+        "summary": "Delete account",
+        "description": "Permanently delete the authenticated user's account. **This action is irreversible.**\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Account deleted.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            },
+            "examples": {
+              "application/json": {
+                "message": "Account deleted successfully"
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required. Include `Authorization: Bearer <access_token>`."
+          }
+        },
+        "tags": [
+          "User Profile"
+        ]
+      },
+      "parameters": []
+    },
+    "/accounts/register/": {
+      "post": {
+        "operationId": "auth_register",
+        "summary": "Register a new user",
+        "description": "Create an account with **email**, **password**, and an optional **full_name**.\n\nOn success, returns the created user data along with JWT `access` and `refresh` tokens.\n\nNo `Authorization` header is required for this endpoint.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "required": [
+                "email",
+                "password"
+              ],
+              "type": "object",
+              "properties": {
+                "email": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "user@gmail.com"
+                },
+                "password": {
+                  "type": "string",
+                  "format": "password",
+                  "example": "Password123!",
+                  "minLength": 8
+                },
+                "full_name": {
+                  "type": "string",
+                  "example": "Test User"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Account created successfully.",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                },
+                "user": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "integer"
+                    },
+                    "email": {
+                      "type": "string",
+                      "format": "email"
+                    },
+                    "full_name": {
+                      "type": "string"
+                    },
+                    "date_joined": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "tokens": {
+                  "type": "object",
+                  "properties": {
+                    "access": {
+                      "description": "JWT access token",
+                      "type": "string"
+                    },
+                    "refresh": {
+                      "description": "JWT refresh token",
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            },
+            "examples": {
+              "application/json": {
+                "message": "Account created successfully.",
+                "user": {
+                  "id": 1,
+                  "email": "user@gmail.com",
+                  "full_name": "Test User",
+                  "date_joined": "2026-07-26T07:36:06Z"
+                },
+                "tokens": {
+                  "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+                  "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error."
+          }
+        },
+        "tags": [
+          "Authentication"
+        ],
+        "security": []
+      },
+      "parameters": []
+    },
+    "/auth/token/": {
+      "post": {
+        "operationId": "auth_token_create",
+        "description": "Takes a set of user credentials and returns an access and refresh JSON web\ntoken pair to prove the authentication of those credentials.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TokenObtainPair"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/TokenObtainPair"
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      },
+      "parameters": []
+    },
+    "/auth/token/refresh/": {
+      "post": {
+        "operationId": "auth_token_refresh_create",
+        "description": "Takes a refresh type JSON web token and returns an access type JSON web\ntoken if the refresh token is valid.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TokenRefresh"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/TokenRefresh"
+            }
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      },
+      "parameters": []
+    },
+    "/chat/sessions/": {
+      "get": {
+        "operationId": "chat_sessions_list",
+        "description": "GET    /api/chat/sessions/\nPOST   /api/chat/sessions/\nGET    /api/chat/sessions/{id}/\nDELETE /api/chat/sessions/{id}/",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "A page number within the paginated result set.",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "required": [
+                "count",
+                "results"
+              ],
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "next": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "previous": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/ChatSession"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "post": {
+        "operationId": "chat_sessions_create",
+        "description": "GET    /api/chat/sessions/\nPOST   /api/chat/sessions/\nGET    /api/chat/sessions/{id}/\nDELETE /api/chat/sessions/{id}/",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ChatSession"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/ChatSession"
+            }
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "parameters": []
+    },
+    "/chat/sessions/{id}/": {
+      "get": {
+        "operationId": "chat_sessions_read",
+        "description": "GET    /api/chat/sessions/\nPOST   /api/chat/sessions/\nGET    /api/chat/sessions/{id}/\nDELETE /api/chat/sessions/{id}/",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/ChatSessionDetail"
+            }
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "delete": {
+        "operationId": "chat_sessions_delete",
+        "description": "GET    /api/chat/sessions/\nPOST   /api/chat/sessions/\nGET    /api/chat/sessions/{id}/\nDELETE /api/chat/sessions/{id}/",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "type": "string"
         }
       ]
     },
-    {
-      "name": "02 User Profile",
-      "description": "Protected profile endpoints. Requires a valid access token (run Login first).",
-      "item": [
-        {
-          "name": "Get Profile",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/profile/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "profile", ""]
-            },
-            "description": "Retrieve the authenticated user's profile.\n\n**Requires:** `Authorization: Bearer {{accessToken}}`\n\n**Expected response:** 200 OK\n```json\n{\n  \"id\": 1,\n  \"email\": \"user@gmail.com\",\n  \"full_name\": \"Test User\",\n  \"date_joined\": \"2026-07-26T07:36:06Z\"\n}\n```"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200 OK', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('Profile has required fields', function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json).to.have.property('id');",
-                  "    pm.expect(json).to.have.property('email');",
-                  "    pm.expect(json).to.have.property('full_name');",
-                  "    pm.expect(json).to.have.property('date_joined');",
-                  "});"
-                ]
-              }
-            }
-          ]
+    "/chat/sessions/{session_id}/messages/": {
+      "get": {
+        "operationId": "chat_sessions_messages_list",
+        "description": "GET  /api/chat/sessions/{session_id}/messages/\nPOST /api/chat/sessions/{session_id}/messages/",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
         },
-        {
-          "name": "Update Profile",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"full_name\": \"Updated Name\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/profile/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "profile", ""]
-            },
-            "description": "Update the authenticated user's profile. Currently only `full_name` can be changed.\n\n**Requires:** `Authorization: Bearer {{accessToken}}`\n\n**Expected response:** 200 OK\n```json\n{\n  \"id\": 1,\n  \"email\": \"user@gmail.com\",\n  \"full_name\": \"Updated Name\",\n  \"date_joined\": \"2026-07-26T07:36:06Z\"\n}\n```"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200 OK', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('full_name updated', function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json.full_name).to.eql('Updated Name');",
-                  "});"
-                ]
-              }
-            }
-          ]
+        "tags": [
+          "chat"
+        ]
+      },
+      "post": {
+        "operationId": "chat_sessions_messages_create",
+        "description": "GET  /api/chat/sessions/{session_id}/messages/\nPOST /api/chat/sessions/{session_id}/messages/",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
         },
+        "tags": [
+          "chat"
+        ]
+      },
+      "parameters": [
         {
-          "name": "Delete Account",
-          "request": {
-            "method": "DELETE",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{accessToken}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/profile/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "profile", ""]
-            },
-            "description": "Permanently delete the authenticated user's account.\n\n⚠️ **This action is irreversible.**\n\n**Requires:** `Authorization: Bearer {{accessToken}}`\n\n**Expected response:** 200 OK\n```json\n{ \"message\": \"Account deleted successfully\" }\n```"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200 OK', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "pm.test('Deletion message returned', function () {",
-                  "    var json = pm.response.json();",
-                  "    pm.expect(json.message).to.include('deleted');",
-                  "});",
-                  "",
-                  "// Clear tokens after account deletion",
-                  "if (pm.response.code === 200) {",
-                  "    pm.collectionVariables.set('accessToken', '');",
-                  "    pm.collectionVariables.set('refreshToken', '');",
-                  "    console.log('Account deleted. Tokens cleared.');",
-                  "}"
-                ]
-              }
-            }
-          ]
+          "name": "session_id",
+          "in": "path",
+          "required": true,
+          "type": "string"
         }
       ]
     },
-    {
-      "name": "03 Token Refresh",
-      "description": "Refresh an expired access token using the refresh token.",
-      "item": [
-        {
-          "name": "Refresh Access Token",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+    "/chat/token/": {
+      "post": {
+        "operationId": "chat_token_create",
+        "description": "Takes a set of user credentials and returns an access and refresh JSON web\ntoken pair to prove the authentication of those credentials.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TokenObtainPair"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/TokenObtainPair"
+            }
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "parameters": []
+    },
+    "/chat/token/refresh/": {
+      "post": {
+        "operationId": "chat_token_refresh_create",
+        "description": "Takes a refresh type JSON web token and returns an access type JSON web\ntoken if the refresh token is valid.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/TokenRefresh"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/TokenRefresh"
+            }
+          }
+        },
+        "tags": [
+          "chat"
+        ]
+      },
+      "parameters": []
+    },
+    "/knowledge/bases/": {
+      "get": {
+        "operationId": "knowledge_bases_list",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "description": "A page number within the paginated result set.",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "required": [
+                "count",
+                "results"
+              ],
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "next": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "previous": {
+                  "type": "string",
+                  "format": "uri",
+                  "x-nullable": true
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/KnowledgeBase"
+                  }
                 }
               }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/auth/token/refresh/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "auth", "token", "refresh", ""]
-            },
-            "description": "Get a new access token using the refresh token.\n\nUse this when the access token expires (after 60 minutes by default).\n\n**Expected response:** 200 OK\n```json\n{ \"access\": \"new_jwt_access_token\" }\n```"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200 OK', function () {",
-                  "    pm.response.to.have.status(200);",
-                  "});",
-                  "",
-                  "// Auto-update access token",
-                  "if (pm.response.code === 200) {",
-                  "    var json = pm.response.json();",
-                  "    pm.collectionVariables.set('accessToken', json.access);",
-                  "    console.log('Access token refreshed.');",
-                  "}"
-                ]
-              }
             }
-          ]
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "knowledge_bases_create",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "parameters": []
+    },
+    "/knowledge/bases/{id}/": {
+      "get": {
+        "operationId": "knowledge_bases_read",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "put": {
+        "operationId": "knowledge_bases_update",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "knowledge_bases_partial_update",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [
+          {
+            "name": "data",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/KnowledgeBase"
+            }
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "delete": {
+        "operationId": "knowledge_bases_delete",
+        "summary": "CRUD operations for user Knowledge Bases.",
+        "description": "Users can only access their own knowledge bases.",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "type": "string"
         }
       ]
     },
-    {
-      "name": "04 Smoke Tests — Happy Path",
-      "description": "Run these requests in order to verify the full flow works end-to-end.",
-      "item": [
+    "/knowledge/bases/{kb_id}/documents/": {
+      "get": {
+        "operationId": "knowledge_bases_documents_list",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "consumes": [
+          "multipart/form-data",
+          "application/x-www-form-urlencoded"
+        ],
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "knowledge_bases_documents_create",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "consumes": [
+          "multipart/form-data",
+          "application/x-www-form-urlencoded"
+        ],
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "parameters": [
         {
-          "name": "STEP 1 — Register",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"smoke@example.com\",\n  \"password\": \"SmokeTest123!\",\n  \"full_name\": \"Smoke User\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/register/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "register", ""]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
-                  "if (pm.response.code === 201) {",
-                  "    var d = pm.response.json();",
-                  "    pm.collectionVariables.set('accessToken', d.tokens.access);",
-                  "    pm.collectionVariables.set('refreshToken', d.tokens.refresh);",
-                  "}"
-                ]
-              }
-            }
-          ]
+          "name": "kb_id",
+          "in": "path",
+          "required": true,
+          "type": "string"
+        }
+      ]
+    },
+    "/knowledge/bases/{kb_id}/documents/{doc_id}/": {
+      "get": {
+        "operationId": "knowledge_bases_documents_read",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "put": {
+        "operationId": "knowledge_bases_documents_update",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "patch": {
+        "operationId": "knowledge_bases_documents_partial_update",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "delete": {
+        "operationId": "knowledge_bases_documents_delete",
+        "description": "",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "parameters": [
+        {
+          "name": "kb_id",
+          "in": "path",
+          "required": true,
+          "type": "string"
         },
         {
-          "name": "STEP 2 — Login",
-          "request": {
-            "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"smoke@example.com\",\n  \"password\": \"SmokeTest123!\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/login/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "login", ""]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "if (pm.response.code === 200) {",
-                  "    var d = pm.response.json();",
-                  "    pm.collectionVariables.set('accessToken', d.tokens.access);",
-                  "    pm.collectionVariables.set('refreshToken', d.tokens.refresh);",
-                  "    console.log('Access token saved.');",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "STEP 3 — Get Profile",
-          "request": {
-            "method": "GET",
-            "header": [{"key": "Authorization", "value": "Bearer {{accessToken}}"}],
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/profile/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "profile", ""]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Email matches', function () {",
-                  "    pm.expect(pm.response.json().email).to.eql('smoke@example.com');",
-                  "});"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "STEP 4 — Update Profile",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"full_name\": \"Smoke User Updated\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/profile/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "profile", ""]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Name updated', () => pm.expect(pm.response.json().full_name).to.eql('Smoke User Updated'));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "STEP 5 — Change Password",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"old_password\": \"SmokeTest123!\",\n  \"new_password\": \"NewSmokeTest456!\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/change-password/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "change-password", ""]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "STEP 6 — Logout",
-          "request": {
-            "method": "POST",
-            "header": [
-              {"key": "Content-Type", "value": "application/json"},
-              {"key": "Authorization", "value": "Bearer {{accessToken}}"}
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refresh\": \"{{refreshToken}}\"\n}",
-              "options": {"raw": {"language": "json"}}
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/accounts/logout/",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "accounts", "logout", ""]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.collectionVariables.set('accessToken', '');",
-                  "pm.collectionVariables.set('refreshToken', '');"
-                ]
-              }
-            }
-          ]
+          "name": "doc_id",
+          "in": "path",
+          "required": true,
+          "type": "string"
         }
       ]
     }
-  ]
+  },
+  "definitions": {
+    "TokenObtainPair": {
+      "required": [
+        "email",
+        "password"
+      ],
+      "type": "object",
+      "properties": {
+        "email": {
+          "title": "Email",
+          "type": "string",
+          "minLength": 1
+        },
+        "password": {
+          "title": "Password",
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "TokenRefresh": {
+      "required": [
+        "refresh"
+      ],
+      "type": "object",
+      "properties": {
+        "refresh": {
+          "title": "Refresh",
+          "type": "string",
+          "minLength": 1
+        },
+        "access": {
+          "title": "Access",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        }
+      }
+    },
+    "ChatSession": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "format": "uuid",
+          "readOnly": true
+        },
+        "title": {
+          "title": "Title",
+          "type": "string",
+          "maxLength": 255
+        },
+        "knowledge_base": {
+          "title": "Knowledge base",
+          "type": "string",
+          "format": "uuid",
+          "x-nullable": true
+        },
+        "created_at": {
+          "title": "Created at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "updated_at": {
+          "title": "Updated at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "message_count": {
+          "title": "Message count",
+          "type": "string",
+          "readOnly": true
+        }
+      }
+    },
+    "ChatMessage": {
+      "required": [
+        "content"
+      ],
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "format": "uuid",
+          "readOnly": true
+        },
+        "role": {
+          "title": "Role",
+          "type": "string",
+          "enum": [
+            "user",
+            "assistant"
+          ],
+          "readOnly": true
+        },
+        "content": {
+          "title": "Content",
+          "type": "string",
+          "minLength": 1
+        },
+        "created_at": {
+          "title": "Created at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        }
+      }
+    },
+    "ChatSessionDetail": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "format": "uuid",
+          "readOnly": true
+        },
+        "title": {
+          "title": "Title",
+          "type": "string",
+          "maxLength": 255
+        },
+        "knowledge_base": {
+          "title": "Knowledge base",
+          "type": "string",
+          "format": "uuid",
+          "x-nullable": true
+        },
+        "created_at": {
+          "title": "Created at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "updated_at": {
+          "title": "Updated at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "message_count": {
+          "title": "Message count",
+          "type": "string",
+          "readOnly": true
+        },
+        "messages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChatMessage"
+          },
+          "readOnly": true
+        }
+      }
+    },
+    "KnowledgeBase": {
+      "required": [
+        "name"
+      ],
+      "type": "object",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string",
+          "format": "uuid",
+          "readOnly": true
+        },
+        "owner": {
+          "title": "Owner",
+          "type": "integer",
+          "readOnly": true
+        },
+        "name": {
+          "title": "Name",
+          "type": "string",
+          "maxLength": 255,
+          "minLength": 1
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "chroma_collection_id": {
+          "title": "Chroma collection id",
+          "type": "string",
+          "readOnly": true,
+          "minLength": 1
+        },
+        "created_at": {
+          "title": "Created at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        },
+        "updated_at": {
+          "title": "Updated at",
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true
+        }
+      }
+    }
+  }
 }
