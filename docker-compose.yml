@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: rag_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - chroma_data:/app/chroma_data
+      - media_data:/app/media
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - USE_POSTGRES=${USE_POSTGRES:-False}
+    restart: unless-stopped
+
+volumes:
+  chroma_data:
+  media_data:
