@@ -537,3 +537,41 @@ class LogoutView(APIView):
             {"message": "Logout successful"},
             status=status.HTTP_200_OK,
         )
+from knowledge.models import KnowledgeBase, Document
+from chat.models import ChatSession, ChatMessage
+
+
+class DashboardSummaryView(APIView):
+    """
+    GET /api/accounts/dashboard-summary/
+
+    Return counts of the authenticated user's knowledge bases,
+    documents, chat sessions, and chat messages.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        tags=["User Profile"],
+        operation_id="dashboard_summary",
+        operation_summary="Dashboard summary",
+        operation_description=(
+            "Return aggregate counts for the authenticated user: "
+            "knowledge bases, documents, chat sessions, and messages.\n\n"
+            "**Authentication required** — include `Authorization: Bearer <access_token>` in the header."
+        ),
+        responses={200: _message_schema, 401: _401_response},
+    )
+    def get(self, request):
+        user = request.user
+        kb_ids = KnowledgeBase.objects.filter(owner=user).values_list("id", flat=True)
+
+        return Response(
+            {
+                "total_knowledge_bases": kb_ids.count(),
+                "total_documents": Document.objects.filter(knowledge_base_id__in=kb_ids).count(),
+                "total_chat_sessions": ChatSession.objects.filter(user=user).count(),
+                "total_messages": ChatMessage.objects.filter(session__user=user).count(),
+            },
+            status=status.HTTP_200_OK,
+        )
