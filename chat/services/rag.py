@@ -51,11 +51,10 @@ def retrieve_context(
 
     import chromadb
 
-
     try:
 
         chroma_client = chromadb.PersistentClient(
-            path="./chroma_db"
+            path=str(settings.CHROMA_PERSIST_DIR)
         )
 
 
