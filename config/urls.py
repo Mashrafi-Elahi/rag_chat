@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import JsonResponse
 from django.urls import include, path
 # pyrefly: ignore [missing-import]
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -20,8 +21,18 @@ schema_view = get_schema_view(
 )
 
 
+def health_check(request):
+    return JsonResponse({
+        "status": "ok",
+        "service": "RAG Chat API",
+        "docs": "/api/docs/",
+    })
+
 
 urlpatterns = [
+    # 🩺 Health check / root
+    path("", health_check, name="health-check"),
+
     # Admin
     path("admin/", admin.site.urls),
 
