@@ -1,40 +1,43 @@
-# RAG Chat API — Frontend Integration Guide
+# RAG Chat API — Integration Guide
 
 **Base URL:** `https://ragchat-production-95c4.up.railway.app/api`
-**Interactive docs (Swagger):** `https://ragchat-production-95c4.up.railway.app/api/docs/`
+**Interactive docs (Swagger, click-and-test):** `https://ragchat-production-95c4.up.railway.app/api/docs/`
 **ReDoc (read-only, cleaner for browsing):** `https://ragchat-production-95c4.up.railway.app/api/redoc/`
-**Raw OpenAPI spec (for codegen):** `https://ragchat-production-95c4.up.railway.app/api/swagger.json`
 
-All endpoints below are prefixed with the base URL above. E.g. `POST /accounts/register/` means `POST https://ragchat-production-95c4.up.railway.app/api/accounts/register/`.
+Everyone on the team should use **Swagger** (`/api/docs/`) to explore and test endpoints — no code, no files, just a browser. Everything below matches exactly what's in Swagger.
 
 ---
 
-## 1. Authentication
+## 1. Authentication (JWT)
 
-This API uses **JWT** (JSON Web Tokens) via `djangorestframework-simplejwt`.
+- `access` token → expires in 60 min. Send with every request that needs login.
+- `refresh` token → expires in 7 days. Use it to get a new `access` without logging in again.
 
-- `access` token → short-lived (60 min). Send with every request to a protected endpoint.
-- `refresh` token → long-lived (7 days). Use it to get a new `access` token without re-logging in.
-
-**Every protected endpoint requires this header:**
+**Every protected endpoint needs this header:**
 ```
 Authorization: Bearer <access_token>
 ```
 
-### Auth flow
-1. `POST /accounts/register/` or `POST /accounts/login/` → get back `{ tokens: { access, refresh } }`
-2. Store both tokens (e.g. `localStorage`, or memory + httpOnly cookie if you want it more secure)
-3. Attach `Authorization: Bearer <access>` to every subsequent request
-4. When you get a `401`, call `POST /api/auth/token/refresh/` with the `refresh` token to get a new `access`
-5. On logout, call `POST /accounts/logout/` (invalidates the refresh token server-side) and delete both tokens client-side
+### Flow
+1. `POST /accounts/register/` or `POST /accounts/login/` → get `{ tokens: { access, refresh } }`
+2. Save both tokens
+3. Send `Authorization: Bearer <access>` on every request after that
+4. Got a `401`? Call `POST /auth/token/refresh/` with `refresh` to get a new `access`
+5. Logging out? `POST /accounts/logout/` with `{ refresh }`, then delete both tokens locally
+
+### Testing in Swagger (no code needed)
+1. Open `/api/docs/`
+2. Expand `POST /accounts/register/` → "Try it out" → fill in email/password → Execute
+3. Copy the `access` value from the response
+4. Click the green **Authorize** button (top right) → type `Bearer ` + paste the token (the word "Bearer", a space, then the token) → Authorize → Close
+5. Every "Try it out" call below now sends that header automatically. Token dies after 60 min — just redo steps 2-4 with `/accounts/login/`.
 
 ---
 
 ## 2. Endpoints
 
 ### Auth — `/accounts/`
-
-| Method | Path | Auth? | Body |
+| Method | Path | Auth | Body |
 |---|---|---|---|
 | POST | `/accounts/register/` | No | `{ email, password, full_name? }` |
 | POST | `/accounts/login/` | No | `{ email, password }` |
@@ -42,119 +45,113 @@ Authorization: Bearer <access_token>
 | POST | `/accounts/change-password/` | Yes | `{ old_password, new_password }` |
 | GET | `/accounts/profile/` | Yes | — |
 | PATCH | `/accounts/profile/` | Yes | `{ full_name }` |
-| DELETE | `/accounts/profile/` | Yes | — (irreversible account delete) |
+| DELETE | `/accounts/profile/` | Yes | — (deletes account, irreversible) |
 | POST | `/accounts/logout/` | Yes | `{ refresh }` |
+| GET | `/accounts/dashboard-summary/` | Yes | Counts — see below |
 
-**Register/Login response shape:**
+**Dashboard summary response:**
 ```json
 {
-  "message": "Login successful.",
-  "user": { "id": 1, "email": "user@gmail.com", "full_name": "Test User", "date_joined": "..." },
-  "tokens": { "access": "eyJ...", "refresh": "eyJ..." }
+  "total_knowledge_bases": 3,
+  "total_documents": 12,
+  "total_chat_sessions": 8,
+  "total_messages": 47
 }
 ```
+Use this for any dashboard/home screen. Numbers are scoped to whoever's logged in — no cross-user data.
 
-### Token refresh — top-level, not under `/accounts/`
-
-| Method | Path | Auth? | Body |
+### Token refresh
+| Method | Path | Auth | Body |
 |---|---|---|---|
-| POST | `/auth/token/refresh/` | No | `{ refresh }` → returns `{ access }` |
+| POST | `/auth/token/refresh/` | No | `{ refresh }` → `{ access }` |
 
 ### Knowledge Bases — `/knowledge/`
-
-| Method | Path | Auth? | Notes |
+| Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/knowledge/bases/` | Yes | List your knowledge bases |
 | POST | `/knowledge/bases/` | Yes | `{ name, description? }` |
-| GET | `/knowledge/bases/{id}/` | Yes | |
-| PUT/PATCH | `/knowledge/bases/{id}/` | Yes | |
-| DELETE | `/knowledge/bases/{id}/` | Yes | |
+| GET/PATCH/DELETE | `/knowledge/bases/{id}/` | Yes | |
 | GET | `/knowledge/bases/{kb_id}/documents/` | Yes | List documents in a KB |
-| POST | `/knowledge/bases/{kb_id}/documents/` | Yes | **multipart/form-data** upload — see below |
-| GET/PUT/PATCH/DELETE | `/knowledge/bases/{kb_id}/documents/{doc_id}/` | Yes | |
+| POST | `/knowledge/bases/{kb_id}/documents/` | Yes | multipart upload, see below |
+| GET/PATCH/DELETE | `/knowledge/bases/{kb_id}/documents/{doc_id}/` | Yes | |
 
-**Document upload** — `source_type` is one of `PDF`, `DOCX`, `TXT`, `WEBSITE`.
-- For `PDF`/`DOCX`/`TXT`: send `file` (multipart), max **50MB**, extension must match `source_type`.
-- For `WEBSITE`: send `source_url` instead of a file, no file needed.
+**Uploading a document** — `source_type` is `PDF`, `DOCX`, `TXT`, or `WEBSITE`.
+- PDF/DOCX/TXT: send `file` (multipart), max 50MB, extension must match `source_type`
+- WEBSITE: send `source_url` instead, no file
 
 ```
 POST /knowledge/bases/{kb_id}/documents/
 Content-Type: multipart/form-data
-
 title: "My PDF"
 source_type: "PDF"
 file: <binary>
 ```
 
-Document has a `status` field (processing state) and `chunk_count` once ingestion finishes — poll `GET` on the document if you want to show ingestion progress in the UI.
+**How to know it actually worked (no file access needed):**
+```
+GET /knowledge/bases/{kb_id}/documents/{doc_id}/
+```
+Check `status` (should say something like "ready"/"processed") and `chunk_count` (should be > 0). If `chunk_count` is 0 or `status` shows failed, ingestion broke on that document.
 
 ### Chat — `/chat/`
-
-| Method | Path | Auth? | Notes |
+| Method | Path | Auth | Notes |
 |---|---|---|---|
 | GET | `/chat/sessions/` | Yes | List your chat sessions |
-| POST | `/chat/sessions/` | Yes | `{ title?, knowledge_base? }` — `knowledge_base` is optional, links session to a KB for RAG context |
-| GET | `/chat/sessions/{id}/` | Yes | Returns session **with full message history** |
+| POST | `/chat/sessions/` | Yes | `{ title?, knowledge_base? }` — set `knowledge_base` to link RAG context |
+| GET | `/chat/sessions/{id}/` | Yes | Session + full message history |
 | DELETE | `/chat/sessions/{id}/` | Yes | |
-| GET | `/chat/sessions/{session_id}/messages/` | Yes | List messages in a session |
-| POST | `/chat/sessions/{session_id}/messages/` | Yes | `{ content }` — send a user message, get the AI reply back **synchronously in the same response** |
+| GET | `/chat/sessions/{id}/messages/` | Yes | List messages |
+| POST | `/chat/sessions/{id}/messages/` | Yes | `{ content }` → returns user + AI reply together |
 
-**Sending a chat message — response shape:**
+**Message response:**
 ```json
 {
   "user_message": { "id": "...", "role": "user", "content": "...", "created_at": "..." },
   "assistant_message": { "id": "...", "role": "assistant", "content": "...", "created_at": "..." }
 }
 ```
-This is a **blocking call** — the backend calls OpenRouter and waits for the full reply before responding. No streaming/websockets currently. Expect this to take a few seconds; show a loading/typing indicator in the UI.
+This is a blocking call — waits for the full AI reply (calls OpenRouter), takes a few seconds. No streaming yet. Show a loading indicator.
 
 ---
 
-## 3. Testing with Bearer tokens in Swagger UI
+## 3. Where data actually lives (so nobody's confused)
 
-1. Go to `/api/docs/`
-2. Call `POST /accounts/register/` (or `/login/`) using "Try it out" → copy the `access` token from the response
-3. Click the green **Authorize** button (top right, lock icon)
-4. Paste `Bearer <access_token>` into the value field (yes, include the word `Bearer` and a space) → click Authorize → Close
-5. Now every "Try it out" call on protected endpoints will include that header automatically
+Two separate stores, both already wired up:
+- **Postgres (Neon)** — everything structured: users, knowledge base names, document metadata, chat sessions, messages. Normal rows and columns.
+- **ChromaDB** — only the text chunks + embeddings from uploaded documents, used to power RAG search. Nothing here is human-readable through the API directly — you confirm it worked through `chunk_count` on the document (see above), or by asking the chatbot something about the uploaded content and getting a relevant answer back.
 
-Token expires in 60 minutes — if you start getting `401`s mid-testing, re-login and re-authorize.
+You never need to touch either database directly — the API is the only interface. `chunk_count > 0` on a document + a relevant chatbot answer = proof both stores are working.
 
 ---
 
-## 4. CORS setup — required before your frontend can call this API
+## 4. CORS
 
-The backend only allows origins listed in the `CORS_ALLOWED_ORIGINS` env var (currently defaults to `localhost:3000` only). **Whoever owns Railway deploy needs to add your frontend's dev and prod URLs**, e.g.:
-
+Only origins in the backend's `CORS_ALLOWED_ORIGINS` list can call this API from a browser. Currently allowed:
 ```
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,https://your-frontend.vercel.app
+http://localhost:3000
+http://localhost:5173
+https://rag-chat-frontend-ten.vercel.app
 ```
-
-Set via Railway CLI:
-```
-railway variables --set "CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173,https://your-frontend.vercel.app"
-```
-
-Until your frontend's origin is in that list, browser requests will fail with a CORS error even though the API itself is up — this is not a bug, it's the API refusing unknown origins on purpose.
+Running locally on a different port, or deploying to a new domain? That URL needs to be added to this list on the backend (Railway env var) before your browser calls will work — otherwise you'll see a CORS error even though the API itself is fine.
 
 ---
 
-## 5. Quick reference — status codes you'll actually see
+## 5. Status codes you'll actually see
 
 - `200` / `201` — success
-- `400` — validation error (body has field-level error messages)
-- `401` — missing/expired/invalid Bearer token → refresh or re-login
-- `404` — resource doesn't exist or doesn't belong to you (KBs/sessions/docs are user-scoped — you can't see other users' data)
-- `429` — rate limited (20 req/min unauthenticated, 200 req/min authenticated)
+- `400` — validation error (check the response body for which field)
+- `401` — missing/expired token → refresh or re-login
+- `404` — doesn't exist, or belongs to someone else (all data is user-scoped)
+- `429` — rate limited (20/min unauthenticated, 200/min authenticated)
 
 ---
 
-## 6. Example: full flow in JS (fetch)
+## 6. Full example (JS fetch)
 
 ```js
 const BASE = "https://ragchat-production-95c4.up.railway.app/api";
 
-// 1. Login
+// Login
 const loginRes = await fetch(`${BASE}/accounts/login/`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -162,7 +159,7 @@ const loginRes = await fetch(`${BASE}/accounts/login/`, {
 });
 const { tokens } = await loginRes.json();
 
-// 2. Create a chat session
+// Create a chat session
 const sessionRes = await fetch(`${BASE}/chat/sessions/`, {
   method: "POST",
   headers: {
@@ -173,7 +170,7 @@ const sessionRes = await fetch(`${BASE}/chat/sessions/`, {
 });
 const session = await sessionRes.json();
 
-// 3. Send a message
+// Send a message
 const msgRes = await fetch(`${BASE}/chat/sessions/${session.id}/messages/`, {
   method: "POST",
   headers: {
