@@ -69,8 +69,12 @@ class DocumentListCreateAPIView(APIView):
 
         if serializer.is_valid():
             document = serializer.save(knowledge_base=kb)
-            ingest_document(document)
-            document.refresh_from_db()
+
+            try:
+                ingest_document(document)
+                document.refresh_from_db()
+            except Exception:
+                document.refresh_from_db()
 
             return Response(
                 DocumentSerializer(document).data,

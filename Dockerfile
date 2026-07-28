@@ -23,7 +23,7 @@ COPY . .
 
 RUN python manage.py collectstatic --noinput
 
-RUN mkdir -p /app/chroma_db \
+RUN mkdir -p /app/chroma_db /app/media \
     && adduser --disabled-password --gecos "" django-user \
     && chown -R django-user:django-user /app
 
