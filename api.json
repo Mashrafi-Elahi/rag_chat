@@ -5,9 +5,9 @@
     "description": "API documentation for the RAG Chat application",
     "version": "v1"
   },
-  "host": "127.0.0.1:8000",
+  "host": "ragchat-production-95c4.up.railway.app",
   "schemes": [
-    "http"
+    "https"
   ],
   "basePath": "/api",
   "consumes": [
@@ -34,7 +34,7 @@
       "post": {
         "operationId": "auth_change_password",
         "summary": "Change password",
-        "description": "Change the current user's password.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.\n\nThe `old_password` must match the current password. The `new_password` must be different and pass Django's password validators.",
+        "description": "Change the current user's password.\n\n**Authentication required** — include `Authorization: Bearer <access_token>` in the header.\n\nThe `old_password` must match the current password. The `new_password` must be different and pass Django's password validators.",
         "parameters": [
           {
             "name": "data",
@@ -92,11 +92,39 @@
       },
       "parameters": []
     },
+    "/accounts/dashboard-summary/": {
+      "get": {
+        "operationId": "dashboard_summary",
+        "summary": "Dashboard summary",
+        "description": "Return aggregate counts for the authenticated user: knowledge bases, documents, chat sessions, and messages.\n\n**Authentication required** — include `Authorization: Bearer <access_token>` in the header.",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required. Include `Authorization: Bearer <access_token>`."
+          }
+        },
+        "tags": [
+          "User Profile"
+        ]
+      },
+      "parameters": []
+    },
     "/accounts/forgot-password/": {
       "post": {
         "operationId": "auth_forgot_password",
         "summary": "Forgot password",
-        "description": "Request a password-reset email.\n\nA **generic response** is always returned \u00e2\u20ac\u201d whether or not the email is registered \u00e2\u20ac\u201d to prevent account enumeration.\n\nEmail delivery is a placeholder for now.\n\nNo `Authorization` header is required for this endpoint.",
+        "description": "Request a password-reset email.\n\nA **generic response** is always returned — whether or not the email is registered — to prevent account enumeration.\n\nEmail delivery is a placeholder for now.\n\nNo `Authorization` header is required for this endpoint.",
         "parameters": [
           {
             "name": "data",
@@ -250,7 +278,7 @@
       "post": {
         "operationId": "auth_logout",
         "summary": "Logout",
-        "description": "Validate that the provided refresh token belongs to the current user.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.\n\nAfter a successful response, the **client must delete** its stored access and refresh tokens. Server-side blacklisting is not used in this implementation.",
+        "description": "Validate that the provided refresh token belongs to the current user.\n\n**Authentication required** — include `Authorization: Bearer <access_token>` in the header.\n\nAfter a successful response, the **client must delete** its stored access and refresh tokens. Server-side blacklisting is not used in this implementation.",
         "parameters": [
           {
             "name": "data",
@@ -305,7 +333,7 @@
       "get": {
         "operationId": "profile_get",
         "summary": "Get profile",
-        "description": "Return the authenticated user's profile data.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.",
+        "description": "Return the authenticated user's profile data.\n\n**Authentication required** — include `Authorization: Bearer <access_token>` in the header.",
         "parameters": [],
         "responses": {
           "200": {
@@ -349,7 +377,7 @@
       "patch": {
         "operationId": "profile_update",
         "summary": "Update profile",
-        "description": "Update the authenticated user's profile. Currently only **full_name** may be changed.\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.",
+        "description": "Update the authenticated user's profile. Currently only **full_name** may be changed.\n\n**Authentication required** — include `Authorization: Bearer <access_token>` in the header.",
         "parameters": [
           {
             "name": "data",
@@ -411,7 +439,7 @@
       "delete": {
         "operationId": "profile_delete",
         "summary": "Delete account",
-        "description": "Permanently delete the authenticated user's account. **This action is irreversible.**\n\n**Authentication required** \u00e2\u20ac\u201d include `Authorization: Bearer <access_token>` in the header.",
+        "description": "Permanently delete the authenticated user's account. **This action is irreversible.**\n\n**Authentication required** — include `Authorization: Bearer <access_token>` in the header.",
         "parameters": [],
         "responses": {
           "200": {
@@ -753,62 +781,6 @@
           "type": "string"
         }
       ]
-    },
-    "/chat/token/": {
-      "post": {
-        "operationId": "chat_token_create",
-        "description": "Takes a set of user credentials and returns an access and refresh JSON web\ntoken pair to prove the authentication of those credentials.",
-        "parameters": [
-          {
-            "name": "data",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/TokenObtainPair"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/TokenObtainPair"
-            }
-          }
-        },
-        "tags": [
-          "chat"
-        ]
-      },
-      "parameters": []
-    },
-    "/chat/token/refresh/": {
-      "post": {
-        "operationId": "chat_token_refresh_create",
-        "description": "Takes a refresh type JSON web token and returns an access type JSON web\ntoken if the refresh token is valid.",
-        "parameters": [
-          {
-            "name": "data",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/TokenRefresh"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "",
-            "schema": {
-              "$ref": "#/definitions/TokenRefresh"
-            }
-          }
-        },
-        "tags": [
-          "chat"
-        ]
-      },
-      "parameters": []
     },
     "/knowledge/bases/": {
       "get": {
