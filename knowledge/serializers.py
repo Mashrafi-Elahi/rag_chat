@@ -4,6 +4,8 @@ from .models import KnowledgeBase, Document
 
 
 class KnowledgeBaseSerializer(serializers.ModelSerializer):
+    document_count = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = KnowledgeBase
         fields = (
@@ -12,6 +14,7 @@ class KnowledgeBaseSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "chroma_collection_id",
+            "document_count",
             "created_at",
             "updated_at",
         )
@@ -22,6 +25,9 @@ class KnowledgeBaseSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+    def get_document_count(self, obj):
+        return obj.documents.count()
 
 
 class DocumentSerializer(serializers.ModelSerializer):
