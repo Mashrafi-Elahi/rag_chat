@@ -53,6 +53,16 @@ _message_schema = openapi.Schema(
     },
 )
 
+_dashboard_summary_schema = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        "total_knowledge_bases": openapi.Schema(type=openapi.TYPE_INTEGER),
+        "total_documents": openapi.Schema(type=openapi.TYPE_INTEGER),
+        "total_chat_sessions": openapi.Schema(type=openapi.TYPE_INTEGER),
+        "total_messages": openapi.Schema(type=openapi.TYPE_INTEGER),
+    },
+)
+
 _401_response = openapi.Response(
     description="Authentication required. Include `Authorization: Bearer <access_token>`.",
 )
@@ -493,8 +503,8 @@ class LogoutView(APIView):
         operation_description=(
             "Validate that the provided refresh token belongs to the current user.\n\n"
             "**Authentication required** — include `Authorization: Bearer <access_token>` in the header.\n\n"
-            "After a successful response, the **client must delete** its stored access and refresh tokens. "
-            "Server-side blacklisting is not used in this implementation."
+            "The supplied refresh token is server-side blacklisted. The client must still delete "
+            "both tokens; an already-issued access token remains valid until it expires."
         ),
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -560,7 +570,7 @@ class DashboardSummaryView(APIView):
             "knowledge bases, documents, chat sessions, and messages.\n\n"
             "**Authentication required** — include `Authorization: Bearer <access_token>` in the header."
         ),
-        responses={200: _message_schema, 401: _401_response},
+        responses={200: _dashboard_summary_schema, 401: _401_response},
     )
     def get(self, request):
         user = request.user

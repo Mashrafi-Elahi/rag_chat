@@ -88,10 +88,16 @@ class DocumentSerializer(serializers.ModelSerializer):
         - WEBSITE requires a URL.
         """
 
-        source_type = attrs.get("source_type")
-
-        file = attrs.get("file")
-        source_url = attrs.get("source_url")
+        instance = self.instance
+        source_type = attrs.get(
+            "source_type",
+            instance.source_type if instance else None,
+        )
+        file = attrs.get("file", instance.file if instance else None)
+        source_url = attrs.get(
+            "source_url",
+            instance.source_url if instance else None,
+        )
 
         if source_type == Document.SourceType.WEBSITE:
             if not source_url:

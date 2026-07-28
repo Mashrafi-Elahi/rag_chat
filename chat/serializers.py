@@ -36,6 +36,11 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         ]
 
 
+class CreateMessageResponseSerializer(serializers.Serializer):
+    user_message = ChatMessageSerializer(read_only=True)
+    assistant_message = ChatMessageSerializer(read_only=True)
+
+
 class ChatSessionSerializer(serializers.ModelSerializer):
 
     message_count = serializers.SerializerMethodField()

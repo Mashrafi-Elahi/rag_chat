@@ -207,3 +207,21 @@ class DocumentValidationTests(APITestCase):
         self.client.force_authenticate(user=None)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_patch_title_keeps_existing_source(self):
+        document = Document.objects.create(
+            knowledge_base=self.kb,
+            title="Original title",
+            source_type=Document.SourceType.WEBSITE,
+            source_url="https://example.com",
+        )
+
+        response = self.client.patch(
+            f"{self.url}{document.id}/",
+            {"title": "Updated title"},
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["title"], "Updated title")
+        self.assertEqual(response.data["source_type"], Document.SourceType.WEBSITE)
+        self.assertEqual(response.data["source_url"], "https://example.com")

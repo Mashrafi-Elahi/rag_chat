@@ -1,5 +1,6 @@
 import uuid
 
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import permissions, status, viewsets
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
@@ -47,6 +48,11 @@ class DocumentListCreateAPIView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
+    @swagger_auto_schema(
+        responses={200: DocumentSerializer(many=True)},
+        operation_summary="List documents",
+        tags=["knowledge"],
+    )
     def get(self, request, kb_id):
         kb = get_object_or_404(
             KnowledgeBase,
@@ -58,6 +64,20 @@ class DocumentListCreateAPIView(APIView):
         serializer = DocumentSerializer(documents, many=True)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        request_body=DocumentSerializer,
+        responses={
+            201: DocumentSerializer(),
+            400: "Validation error.",
+            404: "Knowledge base not found.",
+        },
+        operation_summary="Upload or add a document",
+        operation_description=(
+            "Use multipart form data. PDF, DOCX, and TXT sources require `file`; "
+            "website sources require `source_url`."
+        ),
+        tags=["knowledge"],
+    )
     def post(self, request, kb_id):
         kb = get_object_or_404(
             KnowledgeBase,

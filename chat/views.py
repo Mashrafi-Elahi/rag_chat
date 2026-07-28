@@ -1,3 +1,4 @@
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -9,6 +10,7 @@ from .serializers import (
     ChatSessionDetailSerializer,
     ChatSessionSerializer,
     CreateMessageSerializer,
+    CreateMessageResponseSerializer,
 )
 
 
@@ -60,6 +62,11 @@ class ChatMessageListCreateView(APIView):
         except ChatSession.DoesNotExist:
             return None
 
+    @swagger_auto_schema(
+        responses={200: ChatMessageSerializer(many=True)},
+        operation_summary="List session messages",
+        tags=["chat"],
+    )
     def get(self, request, session_id):
         session = self.get_session(session_id)
         if session is None:
@@ -72,6 +79,16 @@ class ChatMessageListCreateView(APIView):
         serializer = ChatMessageSerializer(messages, many=True)
         return Response(serializer.data)
 
+    @swagger_auto_schema(
+        request_body=CreateMessageSerializer,
+        responses={
+            201: CreateMessageResponseSerializer(),
+            400: "Validation error.",
+            404: "Session not found.",
+        },
+        operation_summary="Send a chat message",
+        tags=["chat"],
+    )
     def post(self, request, session_id):
         session = self.get_session(session_id)
         if session is None:

@@ -151,6 +151,29 @@ class AccountsApiSmokeTests(APITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        refresh_response = self.client.post(
+            "/api/auth/token/refresh/",
+            {"refresh": tokens["refresh"]},
+            format="json",
+        )
+        self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_dashboard_summary(self):
+        user = self.create_user()
+        self.client.force_authenticate(user=user)
+
+        response = self.client.get("/api/accounts/dashboard-summary/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            set(response.data),
+            {
+                "total_knowledge_bases",
+                "total_documents",
+                "total_chat_sessions",
+                "total_messages",
+            },
+        )
 
     def test_delete_account(self):
         self.create_user()

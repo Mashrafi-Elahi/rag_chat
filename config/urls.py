@@ -4,9 +4,14 @@ from django.http import JsonResponse
 from django.urls import include, path, re_path
 from django.views.static import serve
 # pyrefly: ignore [missing-import]
+from rest_framework_simplejwt.serializers import (
+    TokenObtainPairSerializer,
+    TokenRefreshSerializer,
+)
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from rest_framework import permissions
+from drf_yasg.utils import swagger_auto_schema
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
@@ -20,6 +25,14 @@ schema_view = get_schema_view(
     permission_classes=(permissions.AllowAny,),
 )
 
+token_pair_schema = openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        "access": openapi.Schema(type=openapi.TYPE_STRING),
+        "refresh": openapi.Schema(type=openapi.TYPE_STRING),
+    },
+)
+
 
 def health_check(request):
     return JsonResponse({
@@ -27,6 +40,37 @@ def health_check(request):
         "service": "RAG Chat API",
         "docs": "/api/docs/",
     })
+
+
+def api_not_found(request):
+    return JsonResponse(
+        {
+            "status": "error",
+            "status_code": 404,
+            "errors": {"detail": "Not found."},
+        },
+        status=404,
+    )
+
+
+class DocumentedTokenObtainPairView(TokenObtainPairView):
+    @swagger_auto_schema(
+        request_body=TokenObtainPairSerializer,
+        responses={200: token_pair_schema, 401: "Invalid credentials."},
+        security=[],
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
+
+
+class DocumentedTokenRefreshView(TokenRefreshView):
+    @swagger_auto_schema(
+        request_body=TokenRefreshSerializer,
+        responses={200: token_pair_schema, 401: "Invalid or expired token."},
+        security=[],
+    )
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
 
 urlpatterns = [
@@ -37,8 +81,8 @@ urlpatterns = [
     path("admin/", admin.site.urls),
 
     # 🔐 Auth (JWT)
-    path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path("api/auth/token/", DocumentedTokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/auth/token/refresh/", DocumentedTokenRefreshView.as_view(), name="token_refresh"),
 
     # 👤 Accounts
     path("api/accounts/", include("accounts.urls")),
@@ -65,11 +109,12 @@ urlpatterns = [
         schema_view.with_ui("redoc", cache_timeout=0),
         name="schema-redoc",
     ),
-    path(
-        "api/swagger.json",
+    re_path(
+        r"^api/swagger(?P<format>\.json|\.yaml)$",
         schema_view.without_ui(cache_timeout=0),
         name="schema-json",
     ),
+    re_path(r"^api(?:/.*)?$", api_not_found, name="api-not-found"),
     re_path(
         r"^media/(?P<path>.*)$",
         serve,

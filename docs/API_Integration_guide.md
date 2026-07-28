@@ -22,8 +22,8 @@ Authorization: Bearer <access_token>
 1. `POST /accounts/register/` or `POST /accounts/login/` → get `{ tokens: { access, refresh } }`
 2. Save both tokens
 3. Send `Authorization: Bearer <access>` on every request after that
-4. Got a `401`? Call `POST /auth/token/refresh/` with `refresh` to get a new `access`
-5. Logging out? `POST /accounts/logout/` with `{ refresh }`, then delete both tokens locally
+4. Got a `401`? Call `POST /auth/token/refresh/` with `refresh`, then replace both stored tokens
+5. Logging out? `POST /accounts/logout/` with `{ refresh }`, then delete both tokens locally. The refresh token is blacklisted; the access token remains valid until it expires.
 
 ### Testing in Swagger (no code needed)
 1. Open `/api/docs/`
@@ -63,7 +63,7 @@ Use this for any dashboard/home screen. Numbers are scoped to whoever's logged i
 ### Token refresh
 | Method | Path | Auth | Body |
 |---|---|---|---|
-| POST | `/auth/token/refresh/` | No | `{ refresh }` → `{ access }` |
+| POST | `/auth/token/refresh/` | No | `{ refresh }` → `{ access, refresh }` |
 
 ### Knowledge Bases — `/knowledge/`
 | Method | Path | Auth | Notes |
@@ -75,7 +75,7 @@ Use this for any dashboard/home screen. Numbers are scoped to whoever's logged i
 | POST | `/knowledge/bases/{kb_id}/documents/` | Yes | multipart upload, see below |
 | GET/PATCH/DELETE | `/knowledge/bases/{kb_id}/documents/{doc_id}/` | Yes | |
 
-**Uploading a document** — `source_type` is `PDF`, `DOCX`, `TXT`, or `WEBSITE`.
+**Uploading a document** — `source_type` is `pdf`, `docx`, `txt`, or `website`.
 - PDF/DOCX/TXT: send `file` (multipart), max 50MB, extension must match `source_type`
 - WEBSITE: send `source_url` instead, no file
 
@@ -83,7 +83,7 @@ Use this for any dashboard/home screen. Numbers are scoped to whoever's logged i
 POST /knowledge/bases/{kb_id}/documents/
 Content-Type: multipart/form-data
 title: "My PDF"
-source_type: "PDF"
+source_type: "pdf"
 file: <binary>
 ```
 
